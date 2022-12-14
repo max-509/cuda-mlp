@@ -64,6 +64,130 @@ add_negative_kernel(dim3 threads, dim3 blocks, size_type shared_mem, cudaStream_
 }
 
 void
+element_wise_mul_kernel(dim3 threads, dim3 blocks, size_type shared_mem, cudaStream_t stream,
+                        TensorReadOnly2D<float, false> t1,
+                        TensorReadOnly2D<float, false> t2,
+                        TensorWriteable2D<float> dst) {
+  auto &&t1_owner = utils::cu_make_pinned_memory_unique(&t1);
+  auto &&t2_owner = utils::cu_make_pinned_memory_unique(&t2);
+  auto &&dst_owner = utils::cu_make_pinned_memory_unique(&dst);
+  details::element_wise_mul_kernel_impl<<<threads, blocks, shared_mem, stream>>>(*t1_owner, *t2_owner, *dst_owner);
+}
+
+void
+element_wise_mul_kernel(dim3 threads, dim3 blocks, size_type shared_mem, cudaStream_t stream,
+                        TensorReadOnly2D<float, false> t1,
+                        TensorReadOnly2D<float, true> t2,
+                        TensorWriteable2D<float> dst) {
+  auto &&t1_owner = utils::cu_make_pinned_memory_unique(&t1);
+  auto &&t2_owner = utils::cu_make_pinned_memory_unique(&t2);
+  auto &&dst_owner = utils::cu_make_pinned_memory_unique(&dst);
+  details::element_wise_mul_kernel_impl<<<threads, blocks, shared_mem, stream>>>(*t1_owner, *t2_owner, *dst_owner);
+}
+
+void
+element_wise_mul_kernel(dim3 threads, dim3 blocks, size_type shared_mem, cudaStream_t stream,
+                        TensorReadOnly2D<float, true> t1,
+                        TensorReadOnly2D<float, false> t2,
+                        TensorWriteable2D<float> dst) {
+  auto &&t1_owner = utils::cu_make_pinned_memory_unique(&t1);
+  auto &&t2_owner = utils::cu_make_pinned_memory_unique(&t2);
+  auto &&dst_owner = utils::cu_make_pinned_memory_unique(&dst);
+  details::element_wise_mul_kernel_impl<<<threads, blocks, shared_mem, stream>>>(*t1_owner, *t2_owner, *dst_owner);
+}
+
+void
+element_wise_mul_kernel(dim3 threads, dim3 blocks, size_type shared_mem, cudaStream_t stream,
+                        TensorReadOnly2D<float, true> t1,
+                        TensorReadOnly2D<float, true> t2,
+                        TensorWriteable2D<float> dst) {
+  auto &&t1_owner = utils::cu_make_pinned_memory_unique(&t1);
+  auto &&t2_owner = utils::cu_make_pinned_memory_unique(&t2);
+  auto &&dst_owner = utils::cu_make_pinned_memory_unique(&dst);
+  details::element_wise_mul_kernel_impl<<<threads, blocks, shared_mem, stream>>>(*t1_owner, *t2_owner, *dst_owner);
+}
+
+void
+element_wise_mul_kernel(dim3 threads, dim3 blocks, size_type shared_mem, cudaStream_t stream,
+                        TensorReadOnly2D<double, false> t1,
+                        TensorReadOnly2D<double, false> t2,
+                        TensorWriteable2D<double> dst) {
+  auto &&t1_owner = utils::cu_make_pinned_memory_unique(&t1);
+  auto &&t2_owner = utils::cu_make_pinned_memory_unique(&t2);
+  auto &&dst_owner = utils::cu_make_pinned_memory_unique(&dst);
+  details::element_wise_mul_kernel_impl<<<threads, blocks, shared_mem, stream>>>(*t1_owner, *t2_owner, *dst_owner);
+}
+
+void
+element_wise_mul_kernel(dim3 threads, dim3 blocks, size_type shared_mem, cudaStream_t stream,
+                        TensorReadOnly2D<double, false> t1,
+                        TensorReadOnly2D<double, true> t2,
+                        TensorWriteable2D<double> dst) {
+  auto &&t1_owner = utils::cu_make_pinned_memory_unique(&t1);
+  auto &&t2_owner = utils::cu_make_pinned_memory_unique(&t2);
+  auto &&dst_owner = utils::cu_make_pinned_memory_unique(&dst);
+  details::element_wise_mul_kernel_impl<<<threads, blocks, shared_mem, stream>>>(*t1_owner, *t2_owner, *dst_owner);
+}
+
+void
+element_wise_mul_kernel(dim3 threads, dim3 blocks, size_type shared_mem, cudaStream_t stream,
+                        TensorReadOnly2D<double, true> t1,
+                        TensorReadOnly2D<double, false> t2,
+                        TensorWriteable2D<double> dst) {
+  auto &&t1_owner = utils::cu_make_pinned_memory_unique(&t1);
+  auto &&t2_owner = utils::cu_make_pinned_memory_unique(&t2);
+  auto &&dst_owner = utils::cu_make_pinned_memory_unique(&dst);
+  details::element_wise_mul_kernel_impl<<<threads, blocks, shared_mem, stream>>>(*t1_owner, *t2_owner, *dst_owner);
+}
+
+void
+element_wise_mul_kernel(dim3 threads, dim3 blocks, size_type shared_mem, cudaStream_t stream,
+                        TensorReadOnly2D<double, true> t1,
+                        TensorReadOnly2D<double, true> t2,
+                        TensorWriteable2D<double> dst) {
+  auto &&t1_owner = utils::cu_make_pinned_memory_unique(&t1);
+  auto &&t2_owner = utils::cu_make_pinned_memory_unique(&t2);
+  auto &&dst_owner = utils::cu_make_pinned_memory_unique(&dst);
+  details::element_wise_mul_kernel_impl<<<threads, blocks, shared_mem, stream>>>(*t1_owner, *t2_owner, *dst_owner);
+}
+
+void
+element_wise_mul_kernel(dim3 threads, dim3 blocks, size_type shared_mem, cudaStream_t stream,
+                        TensorReadOnly2D<float, false> t1,
+                        TensorWriteable2D<float> dst) {
+  auto &&t1_owner = utils::cu_make_pinned_memory_unique(&t1);
+  auto &&dst_owner = utils::cu_make_pinned_memory_unique(&dst);
+  details::element_wise_mul_kernel_impl<<<threads, blocks, shared_mem, stream>>>(*t1_owner, *dst_owner);
+}
+
+void
+element_wise_mul_kernel(dim3 threads, dim3 blocks, size_type shared_mem, cudaStream_t stream,
+                        TensorReadOnly2D<float, true> t1,
+                        TensorWriteable2D<float> dst) {
+  auto &&t1_owner = utils::cu_make_pinned_memory_unique(&t1);
+  auto &&dst_owner = utils::cu_make_pinned_memory_unique(&dst);
+  details::element_wise_mul_kernel_impl<<<threads, blocks, shared_mem, stream>>>(*t1_owner, *dst_owner);
+}
+
+void
+element_wise_mul_kernel(dim3 threads, dim3 blocks, size_type shared_mem, cudaStream_t stream,
+                        TensorReadOnly2D<double, false> t1,
+                        TensorWriteable2D<double> dst) {
+  auto &&t1_owner = utils::cu_make_pinned_memory_unique(&t1);
+  auto &&dst_owner = utils::cu_make_pinned_memory_unique(&dst);
+  details::element_wise_mul_kernel_impl<<<threads, blocks, shared_mem, stream>>>(*t1_owner, *dst_owner);
+}
+
+void
+element_wise_mul_kernel(dim3 threads, dim3 blocks, size_type shared_mem, cudaStream_t stream,
+                        TensorReadOnly2D<double, true> t1,
+                        TensorWriteable2D<double> dst) {
+  auto &&t1_owner = utils::cu_make_pinned_memory_unique(&t1);
+  auto &&dst_owner = utils::cu_make_pinned_memory_unique(&dst);
+  details::element_wise_mul_kernel_impl<<<threads, blocks, shared_mem, stream>>>(*t1_owner, *dst_owner);
+}
+
+void
 exp_kernel(dim3 threads, dim3 blocks, size_type shared_mem, cudaStream_t stream,
            TensorReadOnly2D<float, false> src, TensorWriteable2D<float> dst) {
   auto &&src_pinned = utils::cu_make_pinned_memory_unique(&src);

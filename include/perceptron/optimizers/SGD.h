@@ -3,8 +3,8 @@
 
 #include "perceptron/common/Common.h"
 #include "perceptron/optimizers/IOptimizer.h"
-#include "perceptron/tensors/MathOps.h"
-#include "perceptron/tensors/MemoryOps.h"
+#include "perceptron/tensors/ops/MathOps.h"
+#include "perceptron/tensors/ops/MemoryOps.h"
 #include "perceptron/common/utils/StreamUtils.h"
 #include "perceptron/common/utils/CuBLASUtils.h"
 

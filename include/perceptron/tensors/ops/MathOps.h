@@ -190,6 +190,35 @@ add_negative(T alpha, TensorWriteable2D<T> x, cudaStream_t stream = nullptr) {
   kernels::add_negative_kernel(threads, blocks, 0, stream, alpha, x);
 }
 
+template<typename T, bool trans_t1, bool trans_t2>
+void
+element_wise_mul(TensorReadOnly2D<T, trans_t1> t1,
+                 TensorReadOnly2D<T, trans_t2> t2,
+                 TensorWriteable2D<T> dst,
+                 cudaStream_t stream = nullptr) {
+  is_valid_type<T>();
+
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
+  dim3 blocks(utils::block_size_by_threads(dst.get_x_dim(), threads.x),
+              utils::block_size_by_threads(dst.get_y_dim(), threads.y));
+
+  kernels::element_wise_mul_kernel(threads, blocks, 0, stream, t1, t2, dst);
+}
+
+template<typename T, bool trans_t1>
+void
+element_wise_mul(TensorReadOnly2D<T, trans_t1> t1,
+                 TensorWriteable2D<T> dst,
+                 cudaStream_t stream = nullptr) {
+  is_valid_type<T>();
+
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
+  dim3 blocks(utils::block_size_by_threads(dst.get_x_dim(), threads.x),
+              utils::block_size_by_threads(dst.get_y_dim(), threads.y));
+
+  kernels::element_wise_mul_kernel(threads, blocks, 0, stream, t1, dst);
+}
+
 template<typename T, bool trans_src>
 void
 exp(TensorReadOnly2D<T, trans_src> src, TensorWriteable2D<T> dst, cudaStream_t stream = nullptr) {

@@ -29,8 +29,6 @@ set(HDRS
         ${HDRS_PATH}/perceptron/tensors/ops/MathOps.h
         ${HDRS_PATH}/perceptron/tensors/ops/kernels/MathOpsKernels.cuh
         ${HDRS_PATH}/perceptron/tensors/ops/kernels/impl/MemoryOpsKernelsImpl.cuh
-        ${HDRS_PATH}/perceptron/tensors/ops/DNNOps.h
-        ${HDRS_PATH}/perceptron/tensors/ops/kernels/impl/DNNOpsKernelsImpl.cuh
         ${HDRS_PATH}/perceptron/tensors/TensorHelper.h
         ${HDRS_PATH}/perceptron/tensors/Tensor1D.h
         ${HDRS_PATH}/perceptron/tensors/Tensor2D.h
@@ -41,7 +39,7 @@ set(HDRS
         ${HDRS_PATH}/perceptron/common/utils/CuBLASUtils.h
         ${HDRS_PATH}/perceptron/common/utils/CuDNNUtils.h
         ${HDRS_PATH}/perceptron/common/utils/CudaUtils.h
-        ${HDRS_PATH}/perceptron/common/functions/MathFunctions.cuh ../include/perceptron/tensors/ops/kernels/DNNOpsKernels.cuh)
+        ${HDRS_PATH}/perceptron/common/functions/MathFunctions.cuh)
 
 set(SRCS
 
@@ -57,7 +55,6 @@ set(SRCS
         ${SRCS_PATH}/perceptron/activations/IdentityActivation.cpp
         ${SRCS_PATH}/perceptron/activations/SigmoidActivation.cpp
 
-        ${SRCS_PATH}/perceptron/tensors/ops/BLASOps.cpp
         ${SRCS_PATH}/perceptron/tensors/ops/kernels/MathOpsKernels.cu
         ${SRCS_PATH}/perceptron/tensors/ops/kernels/MemoryOpsKernels.cu
 
@@ -65,7 +62,7 @@ set(SRCS
         ${SRCS_PATH}/perceptron/common/utils/CuBLASUtils.cpp
         ${SRCS_PATH}/perceptron/common/utils/CudaUtils.cpp
         ${SRCS_PATH}/perceptron/common/utils/CuDNNUtils.cpp
-        ${SRCS_PATH}/perceptron/common/utils/MemoryUtils.cpp perceptron/tensors/ops/kernels/DNNOpsKernels.cu)
+        ${SRCS_PATH}/perceptron/common/utils/MemoryUtils.cpp)
 
 add_library(mlp SHARED ${SRCS} ${HDRS})
 

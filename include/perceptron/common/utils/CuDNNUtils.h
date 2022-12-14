@@ -22,6 +22,41 @@
 namespace perceptron {
 namespace utils {
 
+namespace details {
+template<typename T>
+struct cudnn_data_type;
+
+template<>
+struct cudnn_data_type<float> {
+  static constexpr auto value = CUDNN_DATA_FLOAT;
+};
+
+template<>
+struct cudnn_data_type<double> {
+  static constexpr auto value = CUDNN_DATA_DOUBLE;
+};
+
+template<>
+struct cudnn_data_type<std::int32_t> {
+  static constexpr auto value = CUDNN_DATA_INT32;
+};
+
+template<>
+struct cudnn_data_type<std::int64_t> {
+  static constexpr auto value = CUDNN_DATA_INT64;
+};
+
+template<>
+struct cudnn_data_type<std::int8_t> {
+  static constexpr auto value = CUDNN_DATA_INT8;
+};
+
+template<>
+struct cudnn_data_type<bool> {
+  static constexpr auto value = CUDNN_DATA_BOOLEAN;
+};
+}
+
 class CuDNNHandle {
 public:
   static cudnnHandle_t
@@ -45,39 +80,6 @@ private:
     }
   };
 
-  template<typename T>
-  struct cudnn_data_type;
-
-  template<>
-  struct cudnn_data_type<float> {
-    static constexpr auto value = CUDNN_DATA_FLOAT;
-  };
-
-  template<>
-  struct cudnn_data_type<double> {
-    static constexpr auto value = CUDNN_DATA_DOUBLE;
-  };
-
-  template<>
-  struct cudnn_data_type<std::int32_t> {
-    static constexpr auto value = CUDNN_DATA_INT32;
-  };
-
-  template<>
-  struct cudnn_data_type<std::int64_t> {
-    static constexpr auto value = CUDNN_DATA_INT64;
-  };
-
-  template<>
-  struct cudnn_data_type<std::int8_t> {
-    static constexpr auto value = CUDNN_DATA_INT8;
-  };
-
-  template<>
-  struct cudnn_data_type<bool> {
-    static constexpr auto value = CUDNN_DATA_BOOLEAN;
-  };
-
   static std::unique_ptr<cudnnHandle_t, cudnn_handle_deleter>
   cudnn_init_handle();
 
@@ -87,7 +89,7 @@ private:
 template<typename T>
 cudnnDataType_t
 CuDNNHandle::get_data_type() {
-  return CuDNNHandle::cudnn_data_type<T>::value;
+  return details::cudnn_data_type<T>::value;
 }
 
 } // perceptron

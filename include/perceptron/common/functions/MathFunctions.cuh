@@ -35,11 +35,11 @@ abs(T val) {
 template<typename T>
 DEVICE_CALLABLE
 T
-pow(T val) {
+pow(T b, T e) {
   if constexpr (std::is_same_v<T, float>) {
-    return ::powf(val);
+    return ::powf(b, e);
   } else {
-    return ::pow(val);
+    return ::pow(b, e);
   }
 }
 

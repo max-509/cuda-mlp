@@ -1,7 +1,5 @@
 #include "perceptron/losses/SquaredLoss.h"
 
-#include "perceptron/tensors/MathOps.h"
-
 namespace perceptron {
 namespace losses {
 

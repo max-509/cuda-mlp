@@ -4,6 +4,7 @@
 #include "perceptron/common/Common.h"
 #include "perceptron/activations/IActivation.h"
 #include "perceptron/tensors/ops/MathOps.h"
+#include "perceptron/tensors/ops/MemoryOps.h"
 
 namespace perceptron {
 namespace activations {
@@ -48,9 +49,10 @@ tensors::TensorOwnerDevice2D<T>
 SigmoidActivation::derivative_impl(tensors::TensorReadOnly2D<T, trans> inputs) {
   auto output_owner = tensors::constructTensorOwnerDevice2D<T>(inputs.get_y_dim(),
                                                                inputs.get_x_dim());
-
-
-  tensors::ops::set(static_cast<T>(1.0), output_owner.tensor_view());
+  auto sigm = compute_impl(inputs);
+  tensors::ops::copy(sigm.tensor_view().to_read_only(), output_owner.tensor_view());
+  tensors::ops::add_negative(static_cast<T>(1.0), sigm.tensor_view());
+  tensors::ops::element_wise_mul(sigm.tensor_view().to_read_only(), output_owner.tensor_view());
 
   return output_owner;
 }
