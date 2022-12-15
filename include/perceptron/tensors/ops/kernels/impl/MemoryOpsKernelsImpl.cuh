@@ -15,7 +15,7 @@ template<typename T, bool trans_src>
 __global__
 void
 copy_kernel_imlp(const TensorReadOnly2D<T, trans_src> &src,
-                 TensorWriteable2D <T> &dst) {
+                 TensorWriteable2D<T> &dst) {
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -24,15 +24,40 @@ copy_kernel_imlp(const TensorReadOnly2D<T, trans_src> &src,
   }
 }
 
+template<typename T, bool trans_src, typename Predicate>
+__global__
+void
+copy_if_kernel_imlp(const TensorReadOnly2D<T, trans_src> &src, const Predicate &predicate,
+                 TensorWriteable2D<T> &dst) {
+  const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
+  const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (y_idx < src.get_y_dim() && x_idx < src.get_x_dim()) {
+    dst(y_idx, x_idx) = src(y_idx, x_idx) * static_cast<T>(predicate(dst(y_idx, x_idx)));
+  }
+}
+
 template<typename T>
 __global__
 void
-set_kernel_impl(T value, TensorWriteable2D <T> &dst) {
+set_kernel_impl(T value, TensorWriteable2D<T> &dst) {
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (y_idx < dst.get_y_dim() && x_idx < dst.get_x_dim()) {
     dst(y_idx, x_idx) = value;
+  }
+}
+
+template<typename T, typename Predicate>
+__global__
+void
+set_if_kernel_impl(T value, const Predicate &predicate, TensorWriteable2D<T> &dst) {
+  const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
+  const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (y_idx < dst.get_y_dim() && x_idx < dst.get_x_dim()) {
+    dst(y_idx, x_idx) = value * static_cast<T>(predicate(dst(y_idx, x_idx)));
   }
 }
 

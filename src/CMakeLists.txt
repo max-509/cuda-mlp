@@ -22,6 +22,7 @@ set(HDRS
         ${HDRS_PATH}/perceptron/activations/IActivation.h
         ${HDRS_PATH}/perceptron/activations/IdentityActivation.h
         ${HDRS_PATH}/perceptron/activations/SigmoidActivation.h
+        ${HDRS_PATH}/perceptron/activations/ReLUActivation.h
 
         ${HDRS_PATH}/perceptron/tensors/ops/MemoryOps.h
         ${HDRS_PATH}/perceptron/tensors/ops/kernels/MemoryOpsKernels.cuh
@@ -43,28 +44,31 @@ set(HDRS
 
 set(SRCS
 
-        ${SRCS_PATH}/perceptron/MultilayerPerceptron.cpp
+        ${SRCS_PATH}/perceptron/MultilayerPerceptron.cu
 
-        ${SRCS_PATH}/perceptron/losses/ILoss.cpp
-        ${SRCS_PATH}/perceptron/losses/SquaredLoss.cpp
+        ${SRCS_PATH}/perceptron/losses/ILoss.cu
+        ${SRCS_PATH}/perceptron/losses/SquaredLoss.cu
 
-        ${SRCS_PATH}/perceptron/optimizers/IOptimizer.cpp
-        ${SRCS_PATH}/perceptron/optimizers/SGD.cpp
+        ${SRCS_PATH}/perceptron/optimizers/IOptimizer.cu
+        ${SRCS_PATH}/perceptron/optimizers/SGD.cu
 
-        ${SRCS_PATH}/perceptron/activations/IActivation.cpp
-        ${SRCS_PATH}/perceptron/activations/IdentityActivation.cpp
-        ${SRCS_PATH}/perceptron/activations/SigmoidActivation.cpp
+        ${SRCS_PATH}/perceptron/activations/IActivation.cu
+        ${SRCS_PATH}/perceptron/activations/IdentityActivation.cu
+        ${SRCS_PATH}/perceptron/activations/SigmoidActivation.cu
+        ${SRCS_PATH}/perceptron/activations/ReLUActivation.cu
 
         ${SRCS_PATH}/perceptron/tensors/ops/kernels/MathOpsKernels.cu
         ${SRCS_PATH}/perceptron/tensors/ops/kernels/MemoryOpsKernels.cu
 
-        ${SRCS_PATH}/perceptron/common/utils/StreamUtils.cpp
-        ${SRCS_PATH}/perceptron/common/utils/CuBLASUtils.cpp
-        ${SRCS_PATH}/perceptron/common/utils/CudaUtils.cpp
-        ${SRCS_PATH}/perceptron/common/utils/CuDNNUtils.cpp
-        ${SRCS_PATH}/perceptron/common/utils/MemoryUtils.cpp)
+        ${SRCS_PATH}/perceptron/common/utils/StreamUtils.cu
+        ${SRCS_PATH}/perceptron/common/utils/CuBLASUtils.cu
+        ${SRCS_PATH}/perceptron/common/utils/CudaUtils.cu
+        ${SRCS_PATH}/perceptron/common/utils/CuDNNUtils.cu
+        ${SRCS_PATH}/perceptron/common/utils/MemoryUtils.cu)
 
 add_library(mlp SHARED ${SRCS} ${HDRS})
+
+target_compile_options(mlp PRIVATE --extended-lambda)
 
 target_include_directories(mlp PUBLIC ${HDRS_PATH})
 

@@ -10,6 +10,8 @@
 
 #include <cuda_runtime.h>
 
+#include <utility>
+
 namespace perceptron {
 namespace tensors {
 namespace ops {
@@ -33,6 +35,20 @@ copy(TensorReadOnly2D<T, trans_src> src,
                              cudaMemcpyDefault,
                              stream);
   }
+}
+
+template<typename T, bool trans_src, typename Predicate>
+void
+copy_if(TensorReadOnly2D<T, trans_src> src,
+        Predicate &&predicate,
+        TensorWriteable2D<T> dst,
+        cudaStream_t stream = nullptr) {
+  is_valid_type<T>();
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
+  dim3 blocks(utils::block_size_by_threads(src.get_x_dim(), threads.x),
+              utils::block_size_by_threads(src.get_y_dim(), threads.y));
+
+  kernels::copy_if_kernel(threads, blocks, 0, stream, src, device_forward<Predicate>(predicate), dst);
 }
 
 template<typename T>
@@ -62,6 +78,21 @@ set(int value,
                            dst.get_x_dim(),
                            dst.get_y_dim(),
                            stream);
+}
+
+template<typename T, typename Predicate>
+void
+set_if(T value,
+       Predicate &&predicate,
+       TensorWriteable2D<T> dst,
+       cudaStream_t stream = nullptr) {
+  is_valid_type<T>();
+
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
+  dim3 blocks(utils::block_size_by_threads(dst.get_x_dim(), threads.x),
+              utils::block_size_by_threads(dst.get_y_dim(), threads.y));
+
+  kernels::set_if_kernel(threads, blocks, 0, stream, value, device_forward<Predicate>(predicate), dst);
 }
 
 } // perceptron
