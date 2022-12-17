@@ -11,45 +11,45 @@ namespace activations {
 
 class IdentityActivation : public IActivation {
 public:
-  tensors::TensorOwnerDevice2D<float>
-  compute(tensors::TensorReadOnly2D<float, false> inputs) override;
-  tensors::TensorOwnerDevice2D<float>
-  compute(tensors::TensorReadOnly2D<float, true> inputs) override;
+  using IActivation::compute;
+  void
+  compute(tensors::TensorReadOnly2D<float, false> inputs,
+          tensors::TensorWriteable2D<float> outputs) override;
+  void
+  compute(tensors::TensorReadOnly2D<float, true> inputs,
+          tensors::TensorWriteable2D<float> outputs) override;
 
-  tensors::TensorOwnerDevice2D<float>
-  derivative(tensors::TensorReadOnly2D<float, false> inputs) override;
-  tensors::TensorOwnerDevice2D<float>
-  derivative(tensors::TensorReadOnly2D<float, true> inputs) override;
+  void
+  derivative(tensors::TensorReadOnly2D<float, false> inputs,
+             tensors::TensorWriteable2D<float> outputs) override;
+  void
+  derivative(tensors::TensorReadOnly2D<float, true> inputs,
+             tensors::TensorWriteable2D<float> outputs) override;
 
 private:
   template<typename T, bool trans>
-  tensors::TensorOwnerDevice2D<T>
-  compute_impl(tensors::TensorReadOnly2D<T, trans> inputs);
+  void
+  compute_impl(tensors::TensorReadOnly2D<T, trans> inputs,
+               tensors::TensorWriteable2D<T> outputs);
 
   template<typename T, bool trans>
-  tensors::TensorOwnerDevice2D<T>
-  derivative_impl(tensors::TensorReadOnly2D<T, trans> inputs);
+  void
+  derivative_impl(tensors::TensorReadOnly2D<T, trans> inputs,
+                  tensors::TensorWriteable2D<T> outputs);
 };
 
 template<typename T, bool trans>
-tensors::TensorOwnerDevice2D<T>
-IdentityActivation::compute_impl(tensors::TensorReadOnly2D<T, trans> inputs) {
-  auto output_owner = tensors::constructTensorOwnerDevice2D<T>(inputs.get_y_dim(),
-                                                               inputs.get_x_dim());
-  tensors::ops::copy(inputs, output_owner.tensor_view());
-
-  return output_owner;
+void
+IdentityActivation::compute_impl(tensors::TensorReadOnly2D<T, trans> inputs,
+                                 tensors::TensorWriteable2D<T> outputs) {
+  tensors::ops::copy(inputs, outputs);
 }
 
 template<typename T, bool trans>
-tensors::TensorOwnerDevice2D<T>
-IdentityActivation::derivative_impl(tensors::TensorReadOnly2D<T, trans> inputs) {
-  auto output_owner = tensors::constructTensorOwnerDevice2D<T>(inputs.get_y_dim(),
-                                                               inputs.get_x_dim());
-
-  tensors::ops::set(static_cast<T>(1.0), output_owner.tensor_view());
-
-  return output_owner;
+void
+IdentityActivation::derivative_impl(tensors::TensorReadOnly2D<T, trans> inputs,
+                                    tensors::TensorWriteable2D<T> outputs) {
+  tensors::ops::set(static_cast<T>(1.0), outputs);
 }
 
 } // perceptron

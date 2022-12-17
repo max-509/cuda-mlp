@@ -27,7 +27,7 @@ copy(TensorReadOnly2D<T, trans_src> src,
     dim3 blocks(utils::block_size_by_threads(src.get_x_dim(), threads.x),
                 utils::block_size_by_threads(src.get_y_dim(), threads.y));
 
-    kernels::copy_kernel(threads, blocks, 0, stream, src, dst);
+    kernels::copy_kernel(blocks, threads, 0, stream, src, dst);
   } else {
     utils::cu_memcpy2D_async(dst.get(), dst.get_stride(),
                              src.get(), src.get_stride(),
@@ -48,7 +48,7 @@ copy_if(TensorReadOnly2D<T, trans_src> src,
   dim3 blocks(utils::block_size_by_threads(src.get_x_dim(), threads.x),
               utils::block_size_by_threads(src.get_y_dim(), threads.y));
 
-  kernels::copy_if_kernel(threads, blocks, 0, stream, src, device_forward<Predicate>(predicate), dst);
+  kernels::copy_if_kernel(blocks, threads, 0, stream, src, utils::device_forward<Predicate>(predicate), dst);
 }
 
 template<typename T>
@@ -62,7 +62,7 @@ set(T value,
   dim3 blocks(utils::block_size_by_threads(dst.get_x_dim(), threads.x),
               utils::block_size_by_threads(dst.get_y_dim(), threads.y));
 
-  kernels::set_kernel(threads, blocks, 0, stream, value, dst);
+  kernels::set_kernel(blocks, threads, 0, stream, value, dst);
 }
 
 template<typename T>
@@ -92,7 +92,7 @@ set_if(T value,
   dim3 blocks(utils::block_size_by_threads(dst.get_x_dim(), threads.x),
               utils::block_size_by_threads(dst.get_y_dim(), threads.y));
 
-  kernels::set_if_kernel(threads, blocks, 0, stream, value, device_forward<Predicate>(predicate), dst);
+  kernels::set_if_kernel(blocks, threads, 0, stream, value, utils::device_forward<Predicate>(predicate), dst);
 }
 
 } // perceptron

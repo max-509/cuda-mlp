@@ -15,17 +15,33 @@ public:
   IActivation &operator=(const IActivation &) = default;
   IActivation &operator=(IActivation &&) = default;
 
-  virtual tensors::TensorOwnerDevice2D<float>
-  compute(tensors::TensorReadOnly2D<float, false> inputs) = 0;
+  tensors::TensorOwnerDevice2D<float>
+  compute(tensors::TensorReadOnly2D<float, false> inputs);
 
-  virtual tensors::TensorOwnerDevice2D<float>
-  compute(tensors::TensorReadOnly2D<float, true> inputs) = 0;
+  tensors::TensorOwnerDevice2D<float>
+  compute(tensors::TensorReadOnly2D<float, true> inputs);
 
-  virtual tensors::TensorOwnerDevice2D<float>
-  derivative(tensors::TensorReadOnly2D<float, false> inputs) = 0;
+  virtual void
+  compute(tensors::TensorReadOnly2D<float, false> inputs,
+          tensors::TensorWriteable2D<float> outputs) = 0;
 
-  virtual tensors::TensorOwnerDevice2D<float>
-  derivative(tensors::TensorReadOnly2D<float, true> inputs) = 0;
+  virtual void
+  compute(tensors::TensorReadOnly2D<float, true> inputs,
+          tensors::TensorWriteable2D<float> outputs) = 0;
+
+  tensors::TensorOwnerDevice2D<float>
+  derivative(tensors::TensorReadOnly2D<float, false> inputs);
+
+  tensors::TensorOwnerDevice2D<float>
+  derivative(tensors::TensorReadOnly2D<float, true> inputs);
+
+  virtual void
+  derivative(tensors::TensorReadOnly2D<float, false> inputs,
+             tensors::TensorWriteable2D<float> outputs) = 0;
+
+  virtual void
+  derivative(tensors::TensorReadOnly2D<float, true> inputs,
+             tensors::TensorWriteable2D<float> outputs) = 0;
 
   virtual ~IActivation() = default;
 };

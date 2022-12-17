@@ -12,10 +12,12 @@ check_language(CUDA)
 set(HDRS
 
         ${HDRS_PATH}/perceptron/MultilayerPerceptron.h
+        ${HDRS_PATH}/perceptron/Layer.h
 
         ${HDRS_PATH}/perceptron/losses/ILoss.h
         ${HDRS_PATH}/perceptron/losses/SquaredLoss.h
 
+        ${HDRS_PATH}/perceptron/optimizers/OptimizerFactory.h
         ${HDRS_PATH}/perceptron/optimizers/IOptimizer.h
         ${HDRS_PATH}/perceptron/optimizers/SGD.h
 
@@ -39,16 +41,19 @@ set(HDRS
         ${HDRS_PATH}/perceptron/common/utils/StreamUtils.h
         ${HDRS_PATH}/perceptron/common/utils/CuBLASUtils.h
         ${HDRS_PATH}/perceptron/common/utils/CuDNNUtils.h
+        ${HDRS_PATH}/perceptron/common/utils/CurandUtils.h
         ${HDRS_PATH}/perceptron/common/utils/CudaUtils.h
         ${HDRS_PATH}/perceptron/common/functions/MathFunctions.cuh)
 
 set(SRCS
 
         ${SRCS_PATH}/perceptron/MultilayerPerceptron.cu
+        ${SRCS_PATH}/perceptron/Layer.cu
 
         ${SRCS_PATH}/perceptron/losses/ILoss.cu
         ${SRCS_PATH}/perceptron/losses/SquaredLoss.cu
 
+        ${SRCS_PATH}/perceptron/optimizers/OptimizerFactory.cu
         ${SRCS_PATH}/perceptron/optimizers/IOptimizer.cu
         ${SRCS_PATH}/perceptron/optimizers/SGD.cu
 
@@ -63,6 +68,7 @@ set(SRCS
         ${SRCS_PATH}/perceptron/common/utils/StreamUtils.cu
         ${SRCS_PATH}/perceptron/common/utils/CuBLASUtils.cu
         ${SRCS_PATH}/perceptron/common/utils/CudaUtils.cu
+        ${SRCS_PATH}/perceptron/common/utils/CurandUtils.cu
         ${SRCS_PATH}/perceptron/common/utils/CuDNNUtils.cu
         ${SRCS_PATH}/perceptron/common/utils/MemoryUtils.cu)
 
@@ -76,11 +82,8 @@ target_link_directories(mlp PRIVATE ${CUDAToolkit_LIBRARY_DIR})
 target_link_libraries(mlp PRIVATE CUDA::cudart)
 target_link_libraries(mlp PRIVATE CUDA::cuda_driver)
 target_link_libraries(mlp PRIVATE CUDA::cublas)
+target_link_libraries(mlp PRIVATE CUDA::curand)
 target_link_libraries(mlp PRIVATE cudnn)
-
-target_link_libraries(mlp INTERFACE CUDA::cudart)
-target_link_libraries(mlp INTERFACE CUDA::cuda_driver)
-target_link_libraries(mlp INTERFACE CUDA::cublas)
 
 set_target_properties(mlp PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON

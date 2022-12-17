@@ -270,21 +270,21 @@ template<typename T>
 auto
 constructTensorOwnerHost1D(size_type size, size_type stride = 1) {
   auto ptr = utils::cu_make_host_memory_unique<T>(size * stride);
-  return TensorOwner1D<T, utils::cu_host_deleter>(std::move(ptr), size, stride);
+  return TensorOwner1D<T, utils::cu_host_deleter_t>(std::move(ptr), size, stride);
 }
 
 template<typename T>
 auto
 constructTensorOwnerDevice1D(size_type size, size_type stride = 1) {
   auto ptr = utils::cu_make_memory_unique<T>(size * stride);
-  return TensorOwner1D<T, utils::cu_memory_deleter>(std::move(ptr), size, stride);
+  return TensorOwner1D<T, utils::cu_memory_deleter_t>(std::move(ptr), size, stride);
 }
 
 template<typename T>
-using TensorOwnerHost1D = TensorOwner1D<T, utils::cu_host_deleter>;
+using TensorOwnerHost1D = TensorOwner1D<T, utils::cu_host_deleter_t>;
 
 template<typename T>
-using TensorOwnerDevice1D = TensorOwner1D<T, utils::cu_memory_deleter>;
+using TensorOwnerDevice1D = TensorOwner1D<T, utils::cu_memory_deleter_t>;
 
 } // perceptron
 } // tensors

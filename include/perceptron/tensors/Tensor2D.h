@@ -83,20 +83,20 @@ public:
     return m_p_array;
   }
 
-  DEVICE_CALLABLE
-  [[nodiscard]] inline size_type
+  [[nodiscard]] DEVICE_CALLABLE
+  inline size_type
   get_y_dim() const noexcept { return m_y_dim; }
 
-  DEVICE_CALLABLE
-  [[nodiscard]] inline size_type
+  [[nodiscard]] DEVICE_CALLABLE
+  inline size_type
   get_x_dim() const noexcept { return m_x_dim; }
 
-  DEVICE_CALLABLE
-  [[nodiscard]] inline size_type
+  [[nodiscard]] DEVICE_CALLABLE
+  inline size_type
   get_stride() const noexcept { return m_stride; }
 
-  DEVICE_CALLABLE
-  [[nodiscard]] inline size_type
+  [[nodiscard]] DEVICE_CALLABLE
+  inline size_type
   transposed() const noexcept { return is_transposed; }
 
   DEVICE_CALLABLE
@@ -215,18 +215,18 @@ public:
     return m_p_array;
   }
 
-  DEVICE_CALLABLE
-  [[nodiscard]] inline size_type
+  [[nodiscard]] DEVICE_CALLABLE
+  inline size_type
   get_y_dim() const noexcept {
     return m_y_dim;
   }
 
-  DEVICE_CALLABLE
-  [[nodiscard]] inline size_type
+  [[nodiscard]] DEVICE_CALLABLE
+  inline size_type
   get_x_dim() const noexcept { return m_x_dim; }
 
-  DEVICE_CALLABLE
-  [[nodiscard]] inline size_type
+  [[nodiscard]] DEVICE_CALLABLE
+  inline size_type
   get_stride() const noexcept { return m_stride; }
 
   DEVICE_CALLABLE
@@ -309,10 +309,10 @@ private:
 };
 
 template<typename T>
-using TensorOwnerHost2D = TensorOwner2D<T, utils::cu_host_deleter>;
+using TensorOwnerHost2D = TensorOwner2D<T, utils::cu_host_deleter_t>;
 
 template<typename T>
-using TensorOwnerDevice2D = TensorOwner2D<T, utils::cu_memory_deleter>;
+using TensorOwnerDevice2D = TensorOwner2D<T, utils::cu_memory_deleter_t>;
 
 template<typename T, typename Deleter>
 auto
@@ -335,8 +335,8 @@ constructTensorOwnerHost2D(size_type y_dim,
     stride = x_dim;
   }
   auto ptr = utils::cu_make_host_memory_unique<T>(y_dim * stride);
-  return TensorOwner2D<T, utils::cu_host_deleter>(std::move(ptr),
-                                                  y_dim, x_dim, stride);
+  return TensorOwner2D<T, utils::cu_host_deleter_t>(std::move(ptr),
+                                                    y_dim, x_dim, stride);
 }
 
 template<typename T>
@@ -348,12 +348,12 @@ constructTensorOwnerDevice2D(size_type y_dim,
     std::size_t pitch{};
     auto ptr = utils::cu_make_pitched_memory_unique<T>(y_dim, x_dim, pitch);
     stride = static_cast<size_type>(pitch);
-    return TensorOwner2D<T, utils::cu_memory_deleter>(std::move(ptr),
-                                                      y_dim, x_dim, stride);
+    return TensorOwner2D<T, utils::cu_memory_deleter_t>(std::move(ptr),
+                                                        y_dim, x_dim, stride);
   } else {
     auto ptr = utils::cu_make_memory_unique<T>(y_dim * stride);
-    return TensorOwner2D<T, utils::cu_memory_deleter>(std::move(ptr),
-                                                      y_dim, x_dim, stride);
+    return TensorOwner2D<T, utils::cu_memory_deleter_t>(std::move(ptr),
+                                                        y_dim, x_dim, stride);
   }
 }
 

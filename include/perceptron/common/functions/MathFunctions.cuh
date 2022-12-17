@@ -43,6 +43,61 @@ pow(T b, T e) {
   }
 }
 
+template<typename T>
+DEVICE_CALLABLE
+T
+uniform(curandState_t *state, T a, T b) {
+  if constexpr (std::is_same_v<T, float>) {
+    return (b - a) * curand_uniform(state) + a;
+  } else {
+    return (b - a) * curand_uniform_double(state) + a;
+  }
+}
+
+template<typename T>
+DEVICE_CALLABLE
+T
+uniform(curandState_t *state) {
+  if constexpr (std::is_same_v<T, float>) {
+    return curand_uniform(state);
+  } else {
+    return curand_uniform_double(state);
+  }
+}
+
+template<typename T>
+DEVICE_CALLABLE
+T
+normal(curandState_t *state, T mean, T stddev) {
+  if constexpr (std::is_same_v<T, float>) {
+    return mean + stddev * curand_normal(state);
+  } else {
+    return mean + stddev * curand_normal_double(state);
+  }
+}
+
+template<typename T>
+DEVICE_CALLABLE
+T
+normal(curandState_t *state) {
+  if constexpr (std::is_same_v<T, float>) {
+    return curand_normal(state);
+  } else {
+    return curand_normal_double(state);
+  }
+}
+
+template<typename T>
+DEVICE_CALLABLE
+T
+log_normal(curandState_t *state, T mean = 0.0, T stddev = 1.0) {
+  if constexpr (std::is_same_v<T, float>) {
+    return curand_log_normal(state, mean, stddev);
+  } else {
+    return curand_log_normal_double(state, mean, stddev);
+  }
+}
+
 } // perceptron
 } // common
 } // functions

@@ -2,27 +2,28 @@
 #define PERCEPTRON_COMMON_UTILS_MEMORYUTILS_H
 
 #include "perceptron/common/Common.h"
+#include "perceptron/common/utils/CudaUtils.h"
 
 #include <cuda_runtime.h>
 
 namespace perceptron {
 namespace utils {
 
-struct cu_memory_deleter {
+struct cu_memory_deleter_t {
   void
   operator()(void *ptr) const {
     CUDA_CHECK(cudaFree(ptr));
   }
 };
 
-struct cu_pinned_deleter {
+struct cu_pinned_deleter_t {
   void
   operator()(void *ptr) const {
     CUDA_CHECK(cudaHostUnregister(ptr));
   }
 };
 
-struct cu_host_deleter {
+struct cu_host_deleter_t {
   void
   operator()(void *ptr) const {
     CUDA_CHECK(cudaFreeHost(ptr));
@@ -30,26 +31,26 @@ struct cu_host_deleter {
 };
 
 template<typename T>
-using CudaHostOwner = std::unique_ptr<T, cu_host_deleter>;
+using CudaHostOwner = std::unique_ptr<T, cu_host_deleter_t>;
 
 template<typename T>
-using CudaDeviceOwner = std::unique_ptr<T, cu_memory_deleter>;
+using CudaDeviceOwner = std::unique_ptr<T, cu_memory_deleter_t>;
 
 template<typename T>
-using CudaPinnedOwner = std::unique_ptr<T, cu_pinned_deleter>;
+using CudaPinnedOwner = std::unique_ptr<T, cu_pinned_deleter_t>;
 
 template<typename T>
 CudaDeviceOwner<T>
-cu_make_memory_unique(std::size_t size) {
+cu_make_memory_unique(std::size_t size, cudaStream_t stream = nullptr) {
   T *ptr = nullptr;
-  CUDA_CHECK(cudaMalloc(&ptr, size * sizeof(T)));
+  CUDA_CHECK(cudaMallocAsync(&ptr, size * sizeof(T), stream));
 
-  return CudaDeviceOwner<T>(ptr, cu_memory_deleter{});
+  return CudaDeviceOwner<T>(ptr, cu_memory_deleter_t{});
 }
 
 template<typename T>
 CudaDeviceOwner<T>
-cu_make_memory_unique() {
+cu_make_memory_unique(cudaStream_t stream = nullptr) {
   return cu_make_memory_unique<T>(1);
 }
 
@@ -62,7 +63,7 @@ cu_make_pitched_memory_unique(std::size_t nrows,
   CUDA_CHECK(cudaMallocPitch(&ptr, &pitch, sizeof(T) * ncols, nrows));
   pitch /= sizeof(T);
 
-  return CudaDeviceOwner<T>(ptr, cu_memory_deleter{});
+  return CudaDeviceOwner<T>(ptr, cu_memory_deleter_t{});
 }
 
 template<typename T>
@@ -70,7 +71,7 @@ CudaPinnedOwner<T>
 cu_make_pinned_memory_unique(T *ptr, const std::size_t size) {
   CUDA_CHECK(cudaHostRegister(ptr, sizeof(T) * size, cudaHostRegisterDefault));
 
-  return CudaPinnedOwner<T>{ptr, cu_pinned_deleter{}};
+  return CudaPinnedOwner<T>{ptr, cu_pinned_deleter_t{}};
 }
 
 template<typename T>
@@ -85,7 +86,7 @@ cu_make_host_memory_unique(const std::size_t size) {
   T *ptr = nullptr;
   CUDA_CHECK(cudaHostAlloc(&ptr, sizeof(T) * size, cudaHostAllocDefault));
 
-  return CudaHostOwner<T>{ptr, cu_host_deleter{}};
+  return CudaHostOwner<T>{ptr, cu_host_deleter_t{}};
 }
 
 template<typename T>

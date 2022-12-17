@@ -2,6 +2,7 @@
 #define PERCEPTRON_COMMON_UTILS_STREAMUTILS_H
 
 #include "perceptron/common/Common.h"
+#include "perceptron/common/utils/CudaUtils.h"
 
 #include <memory>
 #include <vector>

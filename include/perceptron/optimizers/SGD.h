@@ -9,12 +9,30 @@
 #include "perceptron/common/utils/CuBLASUtils.h"
 
 #include <optional>
+#include <memory>
 
 namespace perceptron {
 namespace optimizers {
 
 class SGD : public IOptimizer {
 public:
+  struct describer_t {
+    using type = SGD;
+
+    double m_lr{1e-5};
+    double m_weights_decay{0.0};
+    double m_momentum{0.0};
+    double m_dampening{0.0};
+    bool m_nesterov{false};
+
+    [[nodiscard]] std::unique_ptr<IOptimizer>
+    build() const {
+      return std::make_unique<SGD>(m_lr, m_weights_decay, m_momentum, m_dampening, m_nesterov);
+    }
+  };
+
+  SGD() = default;
+  SGD(double lr, double weights_decay, double momentum, double dampening, bool netsterov);
 
   void descent(tensors::TensorReadOnly2D<float, false> grads, tensors::TensorWriteable2D<float> weigths) override;
   void descent(tensors::TensorReadOnly2D<float, true> grads, tensors::TensorWriteable2D<float> weigths) override;

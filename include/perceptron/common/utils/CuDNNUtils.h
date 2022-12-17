@@ -89,7 +89,8 @@ private:
 template<typename T>
 cudnnDataType_t
 CuDNNHandle::get_data_type() {
-  return details::cudnn_data_type<T>::value;
+  return details
+  ::cudnn_data_type<T>::value;
 }
 
 } // perceptron

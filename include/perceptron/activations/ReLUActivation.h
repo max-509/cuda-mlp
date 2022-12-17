@@ -12,17 +12,22 @@ namespace activations {
 
 class ReLUActivation : public IActivation {
 public:
-  tensors::TensorOwnerDevice2D<float>
-  compute(tensors::TensorReadOnly2D<float, false> inputs) override;
+  using IActivation::compute;
+  void
+  compute(tensors::TensorReadOnly2D<float, false> inputs,
+          tensors::TensorWriteable2D<float> outputs) override;
 
-  tensors::TensorOwnerDevice2D<float>
-  compute(tensors::TensorReadOnly2D<float, true> inputs) override;
+  void
+  compute(tensors::TensorReadOnly2D<float, true> inputs,
+          tensors::TensorWriteable2D<float> outputs) override;
 
-  tensors::TensorOwnerDevice2D<float>
-  derivative(tensors::TensorReadOnly2D<float, false> inputs) override;
+  void
+  derivative(tensors::TensorReadOnly2D<float, false> inputs,
+             tensors::TensorWriteable2D<float> outputs) override;
 
-  tensors::TensorOwnerDevice2D<float>
-  derivative(tensors::TensorReadOnly2D<float, true> inputs) override;
+  void
+  derivative(tensors::TensorReadOnly2D<float, true> inputs,
+             tensors::TensorWriteable2D<float> outputs) override;
 };
 
 } // perceptron
