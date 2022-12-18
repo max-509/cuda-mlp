@@ -50,7 +50,7 @@ struct curand_normal_tag {
   double stddev{1.0};
 };
 struct curand_binomial_tag {};
-struct curand_poisonn_tag {};
+struct curand_poisson_tag {};
 
 using CurandGeneratorOwner = std::unique_ptr<curandGenerator_t, curand_generator_deleter_t>;
 using CurandStatesOwner = std::unique_ptr<curandState, cu_memory_deleter_t>;

@@ -21,7 +21,7 @@ scal_kernel_impl(T alpha, TensorWriteable2D<T> &x) {
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (y_idx < x.get_y_dim() && x_idx < x.get_x_dim()) {
+  if (y_idx < x.get_nrows() && x_idx < x.get_ncols()) {
     x(y_idx, x_idx) *= alpha;
   }
 }
@@ -33,7 +33,7 @@ reverse_scal_kernel_impl(T alpha, TensorWriteable2D<T> &x) {
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (y_idx < x.get_y_dim() && x_idx < x.get_x_dim()) {
+  if (y_idx < x.get_nrows() && x_idx < x.get_ncols()) {
     x(y_idx, x_idx) = alpha / x(y_idx, x_idx);
   }
 }
@@ -45,7 +45,7 @@ add_kernel_impl(T alpha, TensorReadOnly1D<T> &x, T beta, TensorWriteable2D<T> &d
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (y_idx < dst.get_y_dim() && x_idx < dst.get_x_dim()) {
+  if (y_idx < dst.get_nrows() && x_idx < dst.get_ncols()) {
     dst(y_idx, x_idx) = beta * dst(y_idx, x_idx) + alpha * x(x_idx);
   }
 }
@@ -57,7 +57,7 @@ add_kernel_impl(T alpha, TensorWriteable2D<T> &x) {
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (y_idx < x.get_y_dim() && x_idx < x.get_x_dim()) {
+  if (y_idx < x.get_nrows() && x_idx < x.get_ncols()) {
     x(y_idx, x_idx) += alpha;
   }
 }
@@ -69,7 +69,7 @@ add_negative_kernel_impl(T alpha, TensorWriteable2D<T> &x) {
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (y_idx < x.get_y_dim() && x_idx < x.get_x_dim()) {
+  if (y_idx < x.get_nrows() && x_idx < x.get_ncols()) {
     x(y_idx, x_idx) = alpha - x(y_idx, x_idx);
   }
 }
@@ -83,7 +83,7 @@ element_wise_mul_kernel_impl(TensorReadOnly2D<T, trans_t1> &t1,
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (y_idx < dst.get_y_dim() && x_idx < dst.get_x_dim()) {
+  if (y_idx < dst.get_nrows() && x_idx < dst.get_ncols()) {
     dst(y_idx, x_idx) = t1(y_idx, x_idx) * t2(y_idx, x_idx);
   }
 }
@@ -96,7 +96,7 @@ element_wise_mul_kernel_impl(TensorReadOnly2D<T, trans_t1> &t1,
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (y_idx < dst.get_y_dim() && x_idx < dst.get_x_dim()) {
+  if (y_idx < dst.get_nrows() && x_idx < dst.get_ncols()) {
     dst(y_idx, x_idx) *= t1(y_idx, x_idx);
   }
 }
@@ -110,7 +110,7 @@ element_wise_div_kernel_impl(TensorReadOnly2D<T, trans_t1> &t1,
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (y_idx < dst.get_y_dim() && x_idx < dst.get_x_dim()) {
+  if (y_idx < dst.get_nrows() && x_idx < dst.get_ncols()) {
     dst(y_idx, x_idx) = t1(y_idx, x_idx) / t2(y_idx, x_idx);
   }
 }
@@ -123,7 +123,7 @@ element_wise_div_kernel_impl(TensorReadOnly2D<T, trans_t1> &t1,
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (y_idx < dst.get_y_dim() && x_idx < dst.get_x_dim()) {
+  if (y_idx < dst.get_nrows() && x_idx < dst.get_ncols()) {
     dst(y_idx, x_idx) /= t1(y_idx, x_idx);
   }
 }
@@ -136,7 +136,7 @@ exp_kernel_impl(TensorReadOnly2D<T, trans> &src,
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (y_idx < src.get_y_dim() && x_idx < src.get_x_dim()) {
+  if (y_idx < src.get_nrows() && x_idx < src.get_ncols()) {
     dst(y_idx, x_idx) = common::functions::exp(src(y_idx, x_idx));
   }
 }
@@ -148,7 +148,7 @@ exp_kernel_impl(TensorWriteable2D<T> &dst) {
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (y_idx < dst.get_y_dim() && x_idx < dst.get_x_dim()) {
+  if (y_idx < dst.get_nrows() && x_idx < dst.get_ncols()) {
     dst(y_idx, x_idx) = common::functions::exp(dst(y_idx, x_idx));
   }
 }
@@ -161,7 +161,7 @@ negative_exp_kernel_impl(TensorReadOnly2D<T, trans> &src,
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (y_idx < src.get_y_dim() && x_idx < src.get_x_dim()) {
+  if (y_idx < src.get_nrows() && x_idx < src.get_ncols()) {
     dst(y_idx, x_idx) = common::functions::exp(-src(y_idx, x_idx));
   }
 }
@@ -173,7 +173,7 @@ negative_exp_kernel_impl(TensorWriteable2D<T> &dst) {
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (y_idx < dst.get_y_dim() && x_idx < dst.get_x_dim()) {
+  if (y_idx < dst.get_nrows() && x_idx < dst.get_ncols()) {
     dst(y_idx, x_idx) = common::functions::exp(-dst(y_idx, x_idx));
   }
 }
@@ -186,9 +186,9 @@ generate_uniform_kernel_impl(curandState_t *states, TensorWriteable2D<T> &dst,
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  auto local_state = states[y_idx * dst.get_x_dim() + x_idx];
+  auto local_state = states[y_idx * dst.get_ncols() + x_idx];
   dst(y_idx, x_idx) = common::functions::uniform(&local_state, a, b);
-  states[y_idx * dst.get_x_dim() + x_idx] = local_state;
+  states[y_idx * dst.get_ncols() + x_idx] = local_state;
 }
 
 template<typename T>
@@ -198,9 +198,9 @@ generate_uniform_kernel_impl(curandState_t *states, TensorWriteable2D<T> &dst) {
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  auto local_state = states[y_idx * dst.get_x_dim() + x_idx];
+  auto local_state = states[y_idx * dst.get_ncols() + x_idx];
   dst(y_idx, x_idx) = common::functions::uniform<T>(&local_state);
-  states[y_idx * dst.get_x_dim() + x_idx] = local_state;
+  states[y_idx * dst.get_ncols() + x_idx] = local_state;
 }
 
 template<typename T>
@@ -211,9 +211,9 @@ generate_normal_kernel_impl(curandState_t *states, TensorWriteable2D<T> &dst,
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  auto local_state = states[y_idx * dst.get_x_dim() + x_idx];
+  auto local_state = states[y_idx * dst.get_ncols() + x_idx];
   dst(y_idx, x_idx) = common::functions::normal(&local_state, mean, stddev);
-  states[y_idx * dst.get_x_dim() + x_idx] = local_state;
+  states[y_idx * dst.get_ncols() + x_idx] = local_state;
 }
 
 template<typename T>
@@ -223,9 +223,9 @@ generate_normal_kernel_impl(curandState_t *states, TensorWriteable2D<T> &dst) {
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  auto local_state = states[y_idx * dst.get_x_dim() + x_idx];
+  auto local_state = states[y_idx * dst.get_ncols() + x_idx];
   dst(y_idx, x_idx) = common::functions::normal<T>(&local_state);
-  states[y_idx * dst.get_x_dim() + x_idx] = local_state;
+  states[y_idx * dst.get_ncols() + x_idx] = local_state;
 }
 
 template<typename T>
@@ -236,9 +236,9 @@ generate_log_normal_kernel_impl(curandState_t *states, TensorWriteable2D<T> &dst
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  auto local_state = states[y_idx * dst.get_x_dim() + x_idx];
+  auto local_state = states[y_idx * dst.get_ncols() + x_idx];
   dst(y_idx, x_idx) = common::functions::log_normal(&local_state, mean, stddev);
-  states[y_idx * dst.get_x_dim() + x_idx] = local_state;
+  states[y_idx * dst.get_ncols() + x_idx] = local_state;
 }
 
 template<typename T>
@@ -248,9 +248,9 @@ generate_log_normal_kernel_impl(curandState_t *states, TensorWriteable2D<T> &dst
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  auto local_state = states[y_idx * dst.get_x_dim() + x_idx];
+  auto local_state = states[y_idx * dst.get_ncols() + x_idx];
   dst(y_idx, x_idx) = common::functions::log_normal<T>(&local_state);
-  states[y_idx * dst.get_x_dim() + x_idx] = local_state;
+  states[y_idx * dst.get_ncols() + x_idx] = local_state;
 }
 
 } // perceptron

@@ -8,11 +8,19 @@
 #include <cstddef>
 #include <type_traits>
 #include <memory>
+#include <sstream>
+#include <string>
 
 #include <cuda_runtime.h>
 
 namespace perceptron {
 namespace tensors {
+
+template<typename T>
+class TensorReadOnly1D;
+
+template<typename T>
+class TensorWriteable1D;
 
 template<typename T, bool is_transposed = false>
 class TensorReadOnly2D final {
@@ -27,11 +35,9 @@ public:
   TensorReadOnly2D(const value_type *p_array,
                    size_type y_dim,
                    size_type x_dim,
-                   size_type stride)
-      : m_p_array(p_array), m_y_dim(y_dim), m_x_dim(x_dim), m_stride(stride) {}
+                   size_type stride);
   DEVICE_CALLABLE
-  TensorReadOnly2D(const value_type *p_array, size_type y_dim, size_type x_dim)
-      : TensorReadOnly2D(p_array, y_dim, x_dim, x_dim) {}
+  TensorReadOnly2D(const value_type *p_array, size_type y_dim, size_type x_dim);
   DEVICE_CALLABLE
   TensorReadOnly2D(const TensorReadOnly2D &) = default;
   DEVICE_CALLABLE
@@ -45,65 +51,67 @@ public:
 
   DEVICE_CALLABLE
   inline creference_type
-  operator()(size_type y, size_type x) const noexcept {
-    return *get(y, x);
-  }
+  operator()(size_type y, size_type x) const noexcept;
 
   DEVICE_CALLABLE
   inline creference_type
-  operator()(size_type y) const noexcept {
-    return *get(y, 0);
-  }
+  operator()(size_type y) const noexcept;
 
   DEVICE_CALLABLE
   inline creference_type
-  operator()() const noexcept {
-    return *m_p_array;
-  }
+  operator()() const noexcept;
 
   DEVICE_CALLABLE
   inline const value_type *
-  get(size_type y, size_type x) const noexcept {
-    if constexpr (is_transposed) {
-      return m_p_array + y + m_stride * x;
-    } else {
-      return m_p_array + m_stride * y + x;
-    }
-  }
+  get(size_type y, size_type x) const noexcept;
 
   DEVICE_CALLABLE
   inline const value_type *
-  get(size_type y) const noexcept {
-    return get(y, 0);
-  }
+  get(size_type y) const noexcept;
 
   DEVICE_CALLABLE
   inline const value_type *
-  get() const noexcept {
-    return m_p_array;
-  }
+  get() const noexcept;
+
+  DEVICE_CALLABLE
+  inline TensorReadOnly1D<T>
+  get_row(size_type i) const noexcept;
+
+  DEVICE_CALLABLE
+  inline TensorReadOnly1D<T>
+  get_col(size_type i) const noexcept;
 
   [[nodiscard]] DEVICE_CALLABLE
   inline size_type
-  get_y_dim() const noexcept { return m_y_dim; }
+  get_nrows() const noexcept;
 
   [[nodiscard]] DEVICE_CALLABLE
   inline size_type
-  get_x_dim() const noexcept { return m_x_dim; }
+  get_ncols() const noexcept;
 
   [[nodiscard]] DEVICE_CALLABLE
   inline size_type
-  get_stride() const noexcept { return m_stride; }
+  get_y_dim() const noexcept;
 
   [[nodiscard]] DEVICE_CALLABLE
   inline size_type
-  transposed() const noexcept { return is_transposed; }
+  get_x_dim() const noexcept;
+
+  [[nodiscard]] DEVICE_CALLABLE
+  inline size_type
+  get_stride() const noexcept;
+
+  [[nodiscard]]
+  inline std::string
+  shape_repr() const;
+
+  [[nodiscard]] DEVICE_CALLABLE
+  constexpr size_type
+  transposed() const noexcept;
 
   DEVICE_CALLABLE
   inline TensorReadOnly2D<T, !is_transposed>
-  t() const noexcept {
-    return TensorReadOnly2D<T, !is_transposed>(m_p_array, m_x_dim, m_y_dim, m_stride);
-  }
+  t() const noexcept;
 
 private:
   const value_type *m_p_array{nullptr};
@@ -127,11 +135,9 @@ public:
   TensorWriteable2D(pointer_type p_array,
                     size_type y_dim,
                     size_type x_dim,
-                    size_type stride)
-      : m_p_array(p_array), m_y_dim(y_dim), m_x_dim(x_dim), m_stride(stride) {}
+                    size_type stride);
   DEVICE_CALLABLE
-  TensorWriteable2D(pointer_type p_array, size_type y_dim, size_type x_dim)
-      : TensorWriteable2D(p_array, y_dim, x_dim, x_dim) {}
+  TensorWriteable2D(pointer_type p_array, size_type y_dim, size_type x_dim);
   DEVICE_CALLABLE
   TensorWriteable2D(const TensorWriteable2D &) = default;
   DEVICE_CALLABLE
@@ -145,101 +151,91 @@ public:
 
   DEVICE_CALLABLE
   inline vref_type
-  operator()(size_type y, size_type x) noexcept {
-    return *get(y, x);
-  }
+  operator()(size_type y, size_type x) noexcept;
 
   DEVICE_CALLABLE
   inline vref_type
-  operator()(size_type y) noexcept {
-    return *get(y, 0);
-  }
+  operator()(size_type y) noexcept;
 
   DEVICE_CALLABLE
   inline vref_type
-  operator()() noexcept {
-    return *m_p_array;
-  }
+  operator()() noexcept;
 
   DEVICE_CALLABLE
   inline creference_type
-  operator()(size_type y, size_type x) const noexcept {
-    return *get(y, x);
-  }
+  operator()(size_type y, size_type x) const noexcept;
 
   DEVICE_CALLABLE
   inline creference_type
-  operator()(size_type y) const noexcept {
-    return *get(y, 0);
-  }
+  operator()(size_type y) const noexcept;
 
   DEVICE_CALLABLE
   inline creference_type
-  operator()() const noexcept {
-    return *m_p_array;
-  }
+  operator()() const noexcept;
 
   DEVICE_CALLABLE
   inline pointer_type
-  get(size_type y, size_type x) noexcept {
-    return m_p_array + m_stride * y + x;
-  }
+  get(size_type y, size_type x) noexcept;
 
   DEVICE_CALLABLE
   inline pointer_type
-  get(size_type y) noexcept {
-    return get(y, 0);
-  }
+  get(size_type y) noexcept;
 
   DEVICE_CALLABLE
   inline pointer_type
-  get() noexcept {
-    return m_p_array;
-  }
+  get() noexcept;
 
   DEVICE_CALLABLE
   inline const value_type *
-  get(size_type y, size_type x) const noexcept {
-    return m_p_array + m_stride * y + x;
-  }
+  get(size_type y, size_type x) const noexcept;
 
   DEVICE_CALLABLE
   inline const value_type *
-  get(size_type y) const noexcept {
-    return *get(y, 0);
-  }
+  get(size_type y) const noexcept;
 
   DEVICE_CALLABLE
   inline const value_type *
-  get() const noexcept {
-    return m_p_array;
-  }
+  get() const noexcept;
+
+  DEVICE_CALLABLE
+  inline TensorWriteable1D<T>
+  get_row(size_type i) const noexcept;
+
+  DEVICE_CALLABLE
+  inline TensorWriteable1D<T>
+  get_col(size_type i) const noexcept;
 
   [[nodiscard]] DEVICE_CALLABLE
   inline size_type
-  get_y_dim() const noexcept {
-    return m_y_dim;
-  }
+  get_nrows() const noexcept;
 
   [[nodiscard]] DEVICE_CALLABLE
   inline size_type
-  get_x_dim() const noexcept { return m_x_dim; }
+  get_ncols() const noexcept;
 
   [[nodiscard]] DEVICE_CALLABLE
   inline size_type
-  get_stride() const noexcept { return m_stride; }
+  get_y_dim() const noexcept;
+
+  [[nodiscard]] DEVICE_CALLABLE
+  inline size_type
+  get_x_dim() const noexcept;
+
+  [[nodiscard]] DEVICE_CALLABLE
+  inline size_type
+  get_stride() const noexcept;
+
+  [[nodiscard]]
+  inline std::string
+  shape_repr() const;
 
   DEVICE_CALLABLE
   inline auto
-  to_read_only() const noexcept {
-    return TensorReadOnly2D<T, false>(m_p_array, m_y_dim, m_x_dim, m_stride);
-  }
+  to_read_only() const noexcept;
 
   DEVICE_CALLABLE
   inline
-  operator TensorReadOnly2D<T, false>() const {
-    return to_read_only();
-  }
+  operator TensorReadOnly2D<T, false>() const;
 
 private:
   pointer_type m_p_array{nullptr};
@@ -247,30 +243,6 @@ private:
   size_type m_x_dim{};
   size_type m_stride{};
 };
-
-template<typename T>
-auto
-constructTensorReadOnly2D(const T *p_tensor,
-                          size_type y_dim,
-                          size_type x_dim,
-                          size_type stride = -1L) {
-  if (stride == -1) {
-    stride = x_dim;
-  }
-  return TensorReadOnly2D<T>{p_tensor, y_dim, x_dim, stride};
-}
-
-template<typename T>
-auto
-constructTensorWriteable2D(T *p_tensor,
-                           size_type y_dim,
-                           size_type x_dim,
-                           size_type stride = -1L) {
-  if (stride == -1) {
-    stride = x_dim;
-  }
-  return TensorWriteable2D<T>{p_tensor, y_dim, x_dim, stride};
-}
 
 template<typename T, typename Deleter>
 class TensorOwner2D final {
@@ -280,28 +252,15 @@ private:
 public:
   TensorOwner2D(owned_ptr_type &&owned_ptr,
                 size_type y_dim, size_type x_dim,
-                size_type stride)
-      : m_owned_ptr(std::move(owned_ptr)), m_tensor_view(m_owned_ptr.get(), y_dim, x_dim, stride) {}
+                size_type stride);
 
-  TensorOwner2D(owned_ptr_type &&owned_ptr, size_type y_dim, size_type x_dim)
-      : TensorOwner2D(std::move(owned_ptr), y_dim, x_dim, x_dim) {}
-
-  TensorOwner2D(const TensorOwner2D &) = delete;
-  TensorOwner2D &operator=(const TensorOwner2D &) = delete;
-
-  TensorOwner2D(TensorOwner2D &&) noexcept = default;
-  TensorOwner2D &operator=(TensorOwner2D &&) noexcept = default;
-  ~TensorOwner2D() noexcept = default;
+  TensorOwner2D(owned_ptr_type &&owned_ptr, size_type y_dim, size_type x_dim);
 
   owned_ptr_type
-  release() noexcept {
-    return std::move(m_owned_ptr);
-  }
+  release() noexcept;
 
   view_type
-  tensor_view() const noexcept {
-    return m_tensor_view;
-  }
+  tensor_view() const noexcept;
 
 private:
   owned_ptr_type m_owned_ptr;
@@ -314,50 +273,42 @@ using TensorOwnerHost2D = TensorOwner2D<T, utils::cu_host_deleter_t>;
 template<typename T>
 using TensorOwnerDevice2D = TensorOwner2D<T, utils::cu_memory_deleter_t>;
 
+template<typename T>
+auto
+constructTensorReadOnly2D(const T *p_tensor,
+                          size_type y_dim,
+                          size_type x_dim,
+                          size_type stride = -1L);
+
+template<typename T>
+auto
+constructTensorWriteable2D(T *p_tensor,
+                           size_type y_dim,
+                           size_type x_dim,
+                           size_type stride = -1L);
+
 template<typename T, typename Deleter>
 auto
 constructTensorOwner2D(std::unique_ptr<T, Deleter> &&owned_ptr,
                        size_type y_dim,
                        size_type x_dim,
-                       size_type stride = -1L) {
-  if (stride == -1) {
-    stride = x_dim;
-  }
-  return TensorOwner2D<T, Deleter>(std::move(owned_ptr), y_dim, x_dim, stride);
-}
+                       size_type stride = -1L);
 
 template<typename T>
 auto
 constructTensorOwnerHost2D(size_type y_dim,
                            size_type x_dim,
-                           size_type stride = -1L) {
-  if (stride == -1) {
-    stride = x_dim;
-  }
-  auto ptr = utils::cu_make_host_memory_unique<T>(y_dim * stride);
-  return TensorOwner2D<T, utils::cu_host_deleter_t>(std::move(ptr),
-                                                    y_dim, x_dim, stride);
-}
+                           size_type stride = -1L);
 
 template<typename T>
 auto
 constructTensorOwnerDevice2D(size_type y_dim,
                              size_type x_dim,
-                             size_type stride = -1L) {
-  if (stride == -1) {
-    std::size_t pitch{};
-    auto ptr = utils::cu_make_pitched_memory_unique<T>(y_dim, x_dim, pitch);
-    stride = static_cast<size_type>(pitch);
-    return TensorOwner2D<T, utils::cu_memory_deleter_t>(std::move(ptr),
-                                                        y_dim, x_dim, stride);
-  } else {
-    auto ptr = utils::cu_make_memory_unique<T>(y_dim * stride);
-    return TensorOwner2D<T, utils::cu_memory_deleter_t>(std::move(ptr),
-                                                        y_dim, x_dim, stride);
-  }
-}
+                             size_type stride = -1L);
 
 } // perceptron
 } // tensors
+
+#include "perceptron/tensors/Tensor2DImpl.hpp"
 
 #endif //PERCEPTRON_TENSORS_TENSOR2D_H

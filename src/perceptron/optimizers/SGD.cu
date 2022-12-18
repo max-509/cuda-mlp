@@ -6,6 +6,12 @@ namespace optimizers {
 SGD::SGD(double lr, double weights_decay, double momentum, double dampening, bool netsterov)
     : m_lr(lr), m_weights_decay(weights_decay), m_momentum(momentum), m_dampening(dampening), m_nesterov(netsterov) {}
 
+SGD::SGD(SGD::describer_t describer) : SGD(describer.lr,
+                                           describer.weights_decay,
+                                           describer.momentum,
+                                           describer.dampening,
+                                           describer.nesterov) {}
+
 void SGD::descent(tensors::TensorReadOnly2D<float, false> grads, tensors::TensorWriteable2D<float> weigths) {
   descent_impl(grads, weigths);
 }

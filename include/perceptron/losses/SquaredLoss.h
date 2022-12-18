@@ -54,16 +54,16 @@ SquaredLoss::compute_impl(tensors::TensorReadOnly2D<T, trans_preds> preds,
                           tensors::TensorReadOnly2D<T, trans_trues> trues) {
   is_valid_type<T>();
   auto diff_tensor_owner =
-      tensors::constructTensorOwnerDevice2D<T>(preds.get_y_dim(), preds.get_x_dim(), preds.get_x_dim());
+      tensors::constructTensorOwnerDevice2D<T>(preds.get_nrows(), preds.get_ncols());
   auto diff_tensor_view = diff_tensor_owner.tensor_view();
 
   tensors::ops::geam(preds, static_cast<T>(1.0),
                      trues, static_cast<T>(-1.0), diff_tensor_view);
   auto loss = tensors::ops::nrm2(tensors::constructTensorReadOnly1D(diff_tensor_view.get(),
-                                                                    diff_tensor_view.get_y_dim()
-                                                                        * diff_tensor_view.get_x_dim()));
+                                                                    diff_tensor_view.get_nrows()
+                                                                        * diff_tensor_view.get_ncols()));
 
-  return loss / static_cast<float>(preds.get_y_dim());
+  return loss / static_cast<float>(preds.get_nrows());
 }
 
 template<typename T, bool trans_preds, bool trans_trues>
@@ -72,16 +72,16 @@ SquaredLoss::derivative_impl(tensors::TensorReadOnly2D<T, trans_preds> preds,
                              tensors::TensorReadOnly2D<T, trans_trues> trues) {
   is_valid_type<T>();
   auto diff_tensor_owner =
-      tensors::constructTensorOwnerDevice2D<T>(preds.get_y_dim(), preds.get_x_dim(), preds.get_x_dim());
+      tensors::constructTensorOwnerDevice2D<T>(preds.get_nrows(), preds.get_ncols());
   auto diff_tensor_view = diff_tensor_owner.tensor_view();
 
   tensors::ops::geam(preds, static_cast<T>(1.0),
                      trues, static_cast<T>(-1.0), diff_tensor_view);
 
-  const auto derivative_coeff = static_cast<T>(2.0 / preds.get_y_dim());
+  const auto derivative_coeff = static_cast<T>(2.0 / preds.get_nrows());
   tensors::ops::scal(derivative_coeff, tensors::constructTensorWriteable1D(diff_tensor_view.get(),
-                                                                           diff_tensor_view.get_y_dim()
-                                                                               * diff_tensor_view.get_x_dim()));
+                                                                           diff_tensor_view.get_nrows()
+                                                                               * diff_tensor_view.get_ncols()));
 
   return diff_tensor_owner;
 }

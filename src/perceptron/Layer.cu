@@ -9,28 +9,6 @@
 namespace perceptron {
 namespace layer {
 
-Layer::Layer(size_type input_layer, size_type n_neurons,
-             std::unique_ptr<activations::IActivation> activation,
-             std::unique_ptr<optimizers::IOptimizer> optimizer,
-             const std::unordered_map<std::string, std::any> &config,
-             size_type seed,
-             cudaStream_t stream)
-    : m_activation(std::move(activation)), m_weights_optimizer(std::move(optimizer)),
-      m_weights(tensors::constructTensorOwnerDevice2D<float>(input_layer, n_neurons)),
-      m_bias(std::nullopt) {
-  auto xavier_lim = std::sqrt(6.0) / std::sqrt(input_layer + n_neurons);
-
-  tensors::ops::generate(utils::curand_uniform_tag{-xavier_lim, xavier_lim},
-                         m_weights.tensor_view(), seed, stream);
-
-  if (auto bias_it = config.find("with_bias"); bias_it != config.end() && std::any_cast<bool>(bias_it->second)) {
-    // TODO: optimizer for bias
-    m_bias = tensors::constructTensorOwnerDevice1D<float>(n_neurons);
-    tensors::ops::generate(utils::curand_uniform_tag{-xavier_lim, xavier_lim},
-                           m_bias->tensor_view().to_2d(), seed, stream);
-  }
-}
-
 bool
 Layer::with_bias() const {
   return m_bias.has_value();
@@ -132,6 +110,13 @@ Layer::compute_errors(tensors::TensorReadOnly2D<float, true> backward_errors,
 void
 Layer::compute_errors(tensors::TensorWriteable2D<float> backward_errors) {
   compute_errors_impl(backward_errors);
+}
+
+void
+Layer::compute_errors_impl(tensors::TensorWriteable2D<float> backward_errors) {
+  auto act_der_owner = m_activation->derivative(m_neurons->tensor_view().to_read_only());
+  tensors::ops::element_wise_mul(act_der_owner.tensor_view().to_read_only(),
+                                 backward_errors);
 }
 
 } // perceptron

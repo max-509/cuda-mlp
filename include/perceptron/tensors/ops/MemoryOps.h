@@ -24,14 +24,14 @@ copy(TensorReadOnly2D<T, trans_src> src,
   is_valid_type<T>();
   if constexpr (trans_src) {
     dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
-    dim3 blocks(utils::block_size_by_threads(src.get_x_dim(), threads.x),
-                utils::block_size_by_threads(src.get_y_dim(), threads.y));
+    dim3 blocks(utils::block_size_by_threads(src.get_ncols(), threads.x),
+                utils::block_size_by_threads(src.get_nrows(), threads.y));
 
     kernels::copy_kernel(blocks, threads, 0, stream, src, dst);
   } else {
     utils::cu_memcpy2D_async(dst.get(), dst.get_stride(),
                              src.get(), src.get_stride(),
-                             src.get_x_dim(), src.get_y_dim(),
+                             src.get_ncols(), src.get_nrows(),
                              cudaMemcpyDefault,
                              stream);
   }
@@ -45,8 +45,8 @@ copy_if(TensorReadOnly2D<T, trans_src> src,
         cudaStream_t stream = nullptr) {
   is_valid_type<T>();
   dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
-  dim3 blocks(utils::block_size_by_threads(src.get_x_dim(), threads.x),
-              utils::block_size_by_threads(src.get_y_dim(), threads.y));
+  dim3 blocks(utils::block_size_by_threads(src.get_ncols(), threads.x),
+              utils::block_size_by_threads(src.get_nrows(), threads.y));
 
   kernels::copy_if_kernel(blocks, threads, 0, stream, src, utils::device_forward<Predicate>(predicate), dst);
 }
@@ -59,8 +59,8 @@ set(T value,
   is_valid_type<T>();
 
   dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
-  dim3 blocks(utils::block_size_by_threads(dst.get_x_dim(), threads.x),
-              utils::block_size_by_threads(dst.get_y_dim(), threads.y));
+  dim3 blocks(utils::block_size_by_threads(dst.get_ncols(), threads.x),
+              utils::block_size_by_threads(dst.get_nrows(), threads.y));
 
   kernels::set_kernel(blocks, threads, 0, stream, value, dst);
 }
@@ -75,8 +75,8 @@ set(int value,
   utils::cu_memset2D_async(dst.get(),
                            dst.get_stride(),
                            value,
-                           dst.get_x_dim(),
-                           dst.get_y_dim(),
+                           dst.get_ncols(),
+                           dst.get_nrows(),
                            stream);
 }
 
@@ -89,8 +89,8 @@ set_if(T value,
   is_valid_type<T>();
 
   dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
-  dim3 blocks(utils::block_size_by_threads(dst.get_x_dim(), threads.x),
-              utils::block_size_by_threads(dst.get_y_dim(), threads.y));
+  dim3 blocks(utils::block_size_by_threads(dst.get_ncols(), threads.x),
+              utils::block_size_by_threads(dst.get_nrows(), threads.y));
 
   kernels::set_if_kernel(blocks, threads, 0, stream, value, utils::device_forward<Predicate>(predicate), dst);
 }

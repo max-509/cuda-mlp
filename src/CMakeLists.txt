@@ -34,7 +34,9 @@ set(HDRS
         ${HDRS_PATH}/perceptron/tensors/ops/kernels/impl/MemoryOpsKernelsImpl.cuh
         ${HDRS_PATH}/perceptron/tensors/TensorHelper.h
         ${HDRS_PATH}/perceptron/tensors/Tensor1D.h
+        ${HDRS_PATH}/perceptron/tensors/Tensor1DImpl.hpp
         ${HDRS_PATH}/perceptron/tensors/Tensor2D.h
+        ${HDRS_PATH}/perceptron/tensors/Tensor2DImpl.hpp
 
         ${HDRS_PATH}/perceptron/common/Common.h
         ${HDRS_PATH}/perceptron/common/utils/MemoryUtils.h

@@ -11,6 +11,7 @@
 
 #include <cublas_v2.h>
 
+#include <sstream>
 #include <cassert>
 #include <type_traits>
 
@@ -30,23 +31,20 @@ gemm(T alpha,
   auto cu_transa = transa ? CUBLAS_OP_T : CUBLAS_OP_N;
   auto cu_transb = transb ? CUBLAS_OP_T : CUBLAS_OP_N;
 
-  int m, n, k;
-  if constexpr (!transa) {
-    m = static_cast<int>(A.get_y_dim());
-    n = static_cast<int>(A.get_x_dim());
-  } else {
-    m = static_cast<int>(A.get_x_dim());
-    n = static_cast<int>(A.get_y_dim());
-  }
-  if constexpr (!transb) {
-    k = static_cast<int>(B.get_x_dim());
-    assert(n == B.get_y_dim());
-  } else {
-    k = static_cast<int>(B.get_y_dim());
-    assert(n == B.get_y_dim());
-  }
+  auto m  = static_cast<int>(A.get_nrows());
+  auto n  = static_cast<int>(A.get_ncols());
+  auto k = static_cast<int>(B.get_ncols());
 
-  assert(m == C.get_y_dim() && k == C.get_x_dim());
+  if (n != B.get_nrows()) {
+    std::stringstream stream;
+    stream << "Bad sizes for A@B matrices multiplication: " << A.shape_repr() << " and " << B.shape_repr();
+    throw std::invalid_argument{stream.str()};
+  }
+  if (m != C.get_nrows() && k != C.get_ncols()) {
+    std::stringstream stream;
+    stream << "Bad C matrix size " << C.shape_repr() << " for A@B result (" << m << ", " << k << ")";
+    throw std::invalid_argument{stream.str()};
+  }
 
   if constexpr (std::is_same_v<T, float>) {
     CUBLAS_CHECK(cublasSgemm(handle,
@@ -81,21 +79,18 @@ geam(TensorReadOnly2D<T, transa> A,
   auto cu_transa = transa ? CUBLAS_OP_T : CUBLAS_OP_N;
   auto cu_transb = transb ? CUBLAS_OP_T : CUBLAS_OP_N;
 
-  int m, n;
-  if constexpr (!transa) {
-    m = static_cast<int>(A.get_y_dim());
-    n = static_cast<int>(A.get_x_dim());
-  } else {
-    m = static_cast<int>(A.get_x_dim());
-    n = static_cast<int>(A.get_y_dim());
+  auto m = static_cast<int>(A.get_nrows());
+  auto n = static_cast<int>(A.get_ncols());
+  if (m != B.get_nrows() || n != B.get_ncols()) {
+    std::stringstream stream;
+    stream << "Bad sizes for A+B summation: " << A.shape_repr() << " and " << B.shape_repr();
+    throw std::invalid_argument{stream.str()};
   }
-  if constexpr (!transb) {
-    assert(m == B.get_y_dim() && n == B.get_x_dim());
-  } else {
-    assert(m == B.get_x_dim() && n == B.get_y_dim());
+  if (m != C.get_nrows() || n != C.get_ncols()) {
+    std::stringstream stream;
+    stream << "Bad C matrix size " << C.shape_repr() <<  " for A+B result: (" << n << ", " << m << ")";
+    throw std::invalid_argument{stream.str()};
   }
-
-  assert(m == C.get_y_dim() && n == C.get_x_dim());
 
   if constexpr (std::is_same_v<T, float>) {
     CUBLAS_CHECK(cublasSgeam(handle,
@@ -124,16 +119,13 @@ geam(TensorReadOnly2D<T, transa> A,
   auto handle = utils::CuBLASHandle::getInstance();
   auto cu_transa = transa ? CUBLAS_OP_T : CUBLAS_OP_N;
 
-  int m, n;
-  if constexpr (!transa) {
-    m = static_cast<int>(A.get_y_dim());
-    n = static_cast<int>(A.get_x_dim());
-  } else {
-    m = static_cast<int>(A.get_x_dim());
-    n = static_cast<int>(A.get_y_dim());
+  auto m = static_cast<int>(A.get_nrows());
+  auto n = static_cast<int>(A.get_ncols());
+  if (m != C.get_nrows() || n != C.get_ncols()) {
+    std::stringstream stream;
+    stream << "Bad C matrix size " << C.shape_repr() << " for summation with matrix A with size " << A.shape_repr();
+    throw std::invalid_argument{stream.str()};
   }
-
-  assert(m == C.get_y_dim() && n == C.get_x_dim());
 
   if constexpr (std::is_same_v<T, float>) {
     CUBLAS_CHECK(cublasSgeam(handle,
@@ -163,16 +155,14 @@ gemv(T alpha,
   auto handle = utils::CuBLASHandle::getInstance();
   auto cu_transa = transa ? CUBLAS_OP_T : CUBLAS_OP_N;
 
-  int m, n;
-  if constexpr (!transa) {
-    m = static_cast<int>(A.get_y_dim());
-    n = static_cast<int>(A.get_x_dim());
-  } else {
-    m = static_cast<int>(A.get_x_dim());
-    n = static_cast<int>(A.get_y_dim());
+  auto m = static_cast<int>(A.get_nrows());
+  auto n = static_cast<int>(A.get_ncols());
+  if (n != x.get_size()) {
+    std::stringstream stream;
+    stream << "Bad size for A@x multiplication operation: " << A.shape_repr() << " and " << x.get_size();
+    throw std::invalid_argument{stream.str()};
   }
 
-  assert(n == x.get_size() && m == y.get_size());
   if constexpr (std::is_same_v<T, float>) {
     CUBLAS_CHECK(cublasSgemv(handle, cu_transa,
                              m, n,
@@ -231,8 +221,8 @@ scal(T alpha, TensorWriteable2D<T> x, cudaStream_t stream = nullptr) {
   is_valid_type<T>();
 
   dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
-  dim3 blocks(utils::block_size_by_threads(x.get_x_dim(), threads.x),
-              utils::block_size_by_threads(x.get_y_dim(), threads.y));
+  dim3 blocks(utils::block_size_by_threads(x.get_ncols(), threads.x),
+              utils::block_size_by_threads(x.get_nrows(), threads.y));
 
   kernels::scal_kernel(blocks, threads, 0, stream, alpha, x);
 }
@@ -243,8 +233,8 @@ reverse_scal(T alpha, TensorWriteable2D<T> x, cudaStream_t stream = nullptr) {
   is_valid_type<T>();
 
   dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
-  dim3 blocks(utils::block_size_by_threads(x.get_x_dim(), threads.x),
-              utils::block_size_by_threads(x.get_y_dim(), threads.y));
+  dim3 blocks(utils::block_size_by_threads(x.get_ncols(), threads.x),
+              utils::block_size_by_threads(x.get_nrows(), threads.y));
 
   kernels::reverse_scal_kernel(blocks, threads, 0, stream, alpha, x);
 }
@@ -259,8 +249,8 @@ add(T alpha,
   is_valid_type<T>();
 
   dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
-  dim3 blocks(utils::block_size_by_threads(dst.get_x_dim(), threads.x),
-              utils::block_size_by_threads(dst.get_y_dim(), threads.y));
+  dim3 blocks(utils::block_size_by_threads(dst.get_ncols(), threads.x),
+              utils::block_size_by_threads(dst.get_nrows(), threads.y));
 
   kernels::add_kernel(blocks, threads, 0, stream, alpha, x, beta, dst);
 }
@@ -271,8 +261,8 @@ add(T alpha, TensorWriteable2D<T> x, cudaStream_t stream = nullptr) {
   is_valid_type<T>();
 
   dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
-  dim3 blocks(utils::block_size_by_threads(x.get_x_dim(), threads.x),
-              utils::block_size_by_threads(x.get_y_dim(), threads.y));
+  dim3 blocks(utils::block_size_by_threads(x.get_ncols(), threads.x),
+              utils::block_size_by_threads(x.get_nrows(), threads.y));
 
   kernels::add_kernel(blocks, threads, 0, stream, alpha, x);
 }
@@ -283,8 +273,8 @@ add_negative(T alpha, TensorWriteable2D<T> x, cudaStream_t stream = nullptr) {
   is_valid_type<T>();
 
   dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
-  dim3 blocks(utils::block_size_by_threads(x.get_x_dim(), threads.x),
-              utils::block_size_by_threads(x.get_y_dim(), threads.y));
+  dim3 blocks(utils::block_size_by_threads(x.get_ncols(), threads.x),
+              utils::block_size_by_threads(x.get_nrows(), threads.y));
 
   kernels::add_negative_kernel(blocks, threads, 0, stream, alpha, x);
 }
@@ -298,8 +288,8 @@ element_wise_mul(TensorReadOnly2D<T, trans_t1> t1,
   is_valid_type<T>();
 
   dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
-  dim3 blocks(utils::block_size_by_threads(dst.get_x_dim(), threads.x),
-              utils::block_size_by_threads(dst.get_y_dim(), threads.y));
+  dim3 blocks(utils::block_size_by_threads(dst.get_ncols(), threads.x),
+              utils::block_size_by_threads(dst.get_nrows(), threads.y));
 
   kernels::element_wise_mul_kernel(blocks, threads, 0, stream, t1, t2, dst);
 }
@@ -312,8 +302,8 @@ element_wise_mul(TensorReadOnly2D<T, trans_t1> t1,
   is_valid_type<T>();
 
   dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
-  dim3 blocks(utils::block_size_by_threads(dst.get_x_dim(), threads.x),
-              utils::block_size_by_threads(dst.get_y_dim(), threads.y));
+  dim3 blocks(utils::block_size_by_threads(dst.get_ncols(), threads.x),
+              utils::block_size_by_threads(dst.get_nrows(), threads.y));
 
   kernels::element_wise_mul_kernel(blocks, threads, 0, stream, t1, dst);
 }
@@ -324,8 +314,8 @@ exp(TensorReadOnly2D<T, trans_src> src, TensorWriteable2D<T> dst, cudaStream_t s
   is_valid_type<T>();
 
   dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
-  dim3 blocks(utils::block_size_by_threads(src.get_x_dim(), threads.x),
-              utils::block_size_by_threads(src.get_y_dim(), threads.y));
+  dim3 blocks(utils::block_size_by_threads(src.get_ncols(), threads.x),
+              utils::block_size_by_threads(src.get_nrows(), threads.y));
 
   kernels::exp_kernel(blocks, threads, 0, stream, src, dst);
 }
@@ -336,8 +326,8 @@ exp(TensorWriteable2D<T> dst, cudaStream_t stream = nullptr) {
   is_valid_type<T>();
 
   dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
-  dim3 blocks(utils::block_size_by_threads(dst.get_x_dim(), threads.x),
-              utils::block_size_by_threads(dst.get_y_dim(), threads.y));
+  dim3 blocks(utils::block_size_by_threads(dst.get_ncols(), threads.x),
+              utils::block_size_by_threads(dst.get_nrows(), threads.y));
 
   kernels::exp_kernel(blocks, threads, 0, stream, dst);
 }
@@ -348,8 +338,8 @@ negative_exp(TensorReadOnly2D<T, trans_src> src, TensorWriteable2D<T> dst, cudaS
   is_valid_type<T>();
 
   dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
-  dim3 blocks(utils::block_size_by_threads(src.get_x_dim(), threads.x),
-              utils::block_size_by_threads(src.get_y_dim(), threads.y));
+  dim3 blocks(utils::block_size_by_threads(src.get_ncols(), threads.x),
+              utils::block_size_by_threads(src.get_nrows(), threads.y));
 
   kernels::negative_exp_kernel(blocks, threads, 0, stream, src, dst);
 }
@@ -360,8 +350,8 @@ negative_exp(TensorWriteable2D<T> dst, cudaStream_t stream = nullptr) {
   is_valid_type<T>();
 
   dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
-  dim3 blocks(utils::block_size_by_threads(dst.get_x_dim(), threads.x),
-              utils::block_size_by_threads(dst.get_y_dim(), threads.y));
+  dim3 blocks(utils::block_size_by_threads(dst.get_ncols(), threads.x),
+              utils::block_size_by_threads(dst.get_nrows(), threads.y));
 
   kernels::negative_exp_kernel(blocks, threads, 0, stream, dst);
 }
@@ -374,11 +364,11 @@ generate(curand_distr_tag tag,
          cudaStream_t stream = nullptr) {
   is_valid_type<T>();
 
-  auto curand_states = utils::curand_create_states(seed, dst.get_y_dim() * dst.get_x_dim(), stream);
+  auto curand_states = utils::curand_create_states(seed, dst.get_nrows() * dst.get_ncols(), stream);
 
   dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
-  dim3 blocks(utils::block_size_by_threads(dst.get_x_dim(), threads.x),
-              utils::block_size_by_threads(dst.get_y_dim(), threads.y));
+  dim3 blocks(utils::block_size_by_threads(dst.get_ncols(), threads.x),
+              utils::block_size_by_threads(dst.get_nrows(), threads.y));
 
   kernels::generate_kernel(blocks, threads, 0, stream, curand_states.get(), dst, tag);
 }

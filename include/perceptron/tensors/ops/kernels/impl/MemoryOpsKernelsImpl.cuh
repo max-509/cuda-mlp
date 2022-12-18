@@ -19,7 +19,7 @@ copy_kernel_imlp(const TensorReadOnly2D<T, trans_src> &src,
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (y_idx < src.get_y_dim() && x_idx < src.get_x_dim()) {
+  if (y_idx < src.get_nrows() && x_idx < src.get_ncols()) {
     dst(y_idx, x_idx) = src(y_idx, x_idx);
   }
 }
@@ -32,7 +32,7 @@ copy_if_kernel_imlp(const TensorReadOnly2D<T, trans_src> &src, const Predicate &
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (y_idx < src.get_y_dim() && x_idx < src.get_x_dim()) {
+  if (y_idx < src.get_nrows() && x_idx < src.get_ncols()) {
     dst(y_idx, x_idx) = src(y_idx, x_idx) * static_cast<T>(predicate(dst(y_idx, x_idx)));
   }
 }
@@ -44,7 +44,7 @@ set_kernel_impl(T value, TensorWriteable2D<T> &dst) {
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (y_idx < dst.get_y_dim() && x_idx < dst.get_x_dim()) {
+  if (y_idx < dst.get_nrows() && x_idx < dst.get_ncols()) {
     dst(y_idx, x_idx) = value;
   }
 }
@@ -56,7 +56,7 @@ set_if_kernel_impl(T value, const Predicate &predicate, TensorWriteable2D<T> &ds
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (y_idx < dst.get_y_dim() && x_idx < dst.get_x_dim()) {
+  if (y_idx < dst.get_nrows() && x_idx < dst.get_ncols()) {
     dst(y_idx, x_idx) = value * static_cast<T>(predicate(dst(y_idx, x_idx)));
   }
 }

@@ -11,14 +11,14 @@ namespace optimizers {
 class OptimizerFactory {
 public:
   template<typename OptimizerDescriber>
-  std::unique_ptr<IOptimizer>
+  static std::unique_ptr<IOptimizer>
   build(OptimizerDescriber describer);
 };
 
 template<typename OptimizerDescriber>
 std::unique_ptr<IOptimizer>
 OptimizerFactory::build(OptimizerDescriber describer) {
-  return describer.build();
+  return std::make_unique<typename OptimizerDescriber::type>(describer);
 }
 
 } // perceptron
