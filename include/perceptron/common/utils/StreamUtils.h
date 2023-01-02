@@ -43,6 +43,9 @@ CudaStreamsOwner
 cu_create_streams(size_type size);
 
 void
+cu_wait_stream(const CudaStreamOwner &stream);
+
+void
 cu_wait_streams(const CudaStreamsOwner &streams);
 
 } // perceptron

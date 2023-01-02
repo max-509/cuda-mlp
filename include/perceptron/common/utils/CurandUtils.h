@@ -3,6 +3,7 @@
 
 #include "perceptron/common/Common.h"
 #include "perceptron/common/utils/MemoryUtils.h"
+#include "perceptron/common/utils/StreamUtils.h"
 
 #include <cstdio>
 #include <stdexcept>
@@ -63,7 +64,7 @@ curand_create_states(size_type seed, size_type size, cudaStream_t stream = nullp
 
 void
 curand_set_stream(const CurandGeneratorOwner &gen,
-                  cudaStream_t stream);
+                  cudaStream_t stream = nullptr);
 
 void
 curand_generate(const CurandGeneratorOwner &gen,

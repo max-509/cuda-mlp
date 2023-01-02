@@ -23,6 +23,11 @@ cu_create_streams(size_type size) {
 }
 
 void
+cu_wait_stream(const CudaStreamOwner &stream) {
+  CUDA_CHECK(cudaStreamSynchronize(*stream));
+}
+
+void
 cu_wait_streams(const CudaStreamsOwner &streams) {
   for (auto &&stream : streams) {
     CUDA_CHECK(cudaStreamSynchronize(*stream));

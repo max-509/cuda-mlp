@@ -7,50 +7,54 @@ namespace tensors {
 namespace ops {
 namespace kernels {
 
+template<typename T, bool trans>
+void
+copy_kernel_impl(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+                 TensorReadOnly2D<T, trans> src, TensorWriteable2D<T> dst) {
+  details::copy_kernel_on_device<T, trans><<<blocks, threads, shared_mem, stream>>>(src.get(), src.get_stride(), dst.get(), dst.get_stride(), dst.get_nrows(), dst.get_ncols());
+}
+
 void
 copy_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
             TensorReadOnly2D<float, false> src, TensorWriteable2D<float> dst) {
-  auto &&src_pinned_owner = utils::cu_make_pinned_memory_unique(&src);
-  auto &&dst_pinned_owner = utils::cu_make_pinned_memory_unique(&dst);
-  details::copy_kernel_imlp<<<blocks, threads, shared_mem, stream>>>(*src_pinned_owner, *dst_pinned_owner);
+  copy_kernel_impl(blocks, threads, shared_mem, stream, src, dst);
 }
 
 void
 copy_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
             TensorReadOnly2D<float, true> src, TensorWriteable2D<float> dst) {
-  auto &&src_pinned_owner = utils::cu_make_pinned_memory_unique(&src);
-  auto &&dst_pinned_owner = utils::cu_make_pinned_memory_unique(&dst);
-  details::copy_kernel_imlp<<<blocks, threads, shared_mem, stream>>>(*src_pinned_owner, *dst_pinned_owner);
+  copy_kernel_impl(blocks, threads, shared_mem, stream, src, dst);
 }
 
 void
 copy_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
             TensorReadOnly2D<double, false> src, TensorWriteable2D<double> dst) {
-  auto &&src_pinned_owner = utils::cu_make_pinned_memory_unique(&src);
-  auto &&dst_pinned_owner = utils::cu_make_pinned_memory_unique(&dst);
-  details::copy_kernel_imlp<<<blocks, threads, shared_mem, stream>>>(*src_pinned_owner, *dst_pinned_owner);
+  copy_kernel_impl(blocks, threads, shared_mem, stream, src, dst);
 }
 
 void
 copy_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
             TensorReadOnly2D<double, true> src, TensorWriteable2D<double> dst) {
-  auto &&src_pinned_owner = utils::cu_make_pinned_memory_unique(&src);
-  auto &&dst_pinned_owner = utils::cu_make_pinned_memory_unique(&dst);
-  details::copy_kernel_imlp<<<blocks, threads, shared_mem, stream>>>(*src_pinned_owner, *dst_pinned_owner);
+  copy_kernel_impl(blocks, threads, shared_mem, stream, src, dst);
+}
+
+template<typename T>
+void
+set_kernel_impl(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+                T value, TensorWriteable2D<T> dst) {
+  details::set_kernel_on_device<<<blocks, threads, shared_mem, stream>>>(value, dst.get(), dst.get_stride(), dst.get_nrows(), dst.get_ncols());
 }
 
 void
 set_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
            float value, TensorWriteable2D<float> dst) {
-  auto &&dst_pinned_owner = utils::cu_make_pinned_memory_unique(&dst);
-  details::set_kernel_impl<<<blocks, threads, shared_mem, stream>>>(value, *dst_pinned_owner);
+  set_kernel_impl(blocks, threads, shared_mem, stream, value, dst);
 }
 
 void
 set_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
            double value, TensorWriteable2D<double> dst) {
-  auto &&dst_pinned_owner = utils::cu_make_pinned_memory_unique(&dst);
-  details::set_kernel_impl<<<blocks, threads, shared_mem, stream>>>(value, *dst_pinned_owner);
+  set_kernel_impl(blocks, threads, shared_mem, stream, value, dst);
 }
 
 } // perceptron

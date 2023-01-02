@@ -15,10 +15,10 @@ public:
   IActivation &operator=(const IActivation &) = default;
   IActivation &operator=(IActivation &&) = default;
 
-  tensors::TensorOwnerDevice2D<float>
+  tensors::TensorOwner2D<float>
   compute(tensors::TensorReadOnly2D<float, false> inputs);
 
-  tensors::TensorOwnerDevice2D<float>
+  tensors::TensorOwner2D<float>
   compute(tensors::TensorReadOnly2D<float, true> inputs);
 
   virtual void
@@ -29,10 +29,10 @@ public:
   compute(tensors::TensorReadOnly2D<float, true> inputs,
           tensors::TensorWriteable2D<float> outputs) = 0;
 
-  tensors::TensorOwnerDevice2D<float>
+  tensors::TensorOwner2D<float>
   derivative(tensors::TensorReadOnly2D<float, false> inputs);
 
-  tensors::TensorOwnerDevice2D<float>
+  tensors::TensorOwner2D<float>
   derivative(tensors::TensorReadOnly2D<float, true> inputs);
 
   virtual void

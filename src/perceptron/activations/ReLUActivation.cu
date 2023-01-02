@@ -11,16 +11,16 @@ template<typename T, bool trans>
 static void
 compute_impl(tensors::TensorReadOnly2D<T, trans> inputs,
              tensors::TensorWriteable2D<T> outputs) {
-  tensors::ops::copy(inputs, outputs);
-  tensors::ops::copy_if(inputs, [] DEVICE_CALLABLE(T value) { return value > 0; }, outputs);
+  tensors::ops::copy_or_zero(inputs, [] DEVICE_CALLABLE(T value) { return value > static_cast<T>(0.0); }, outputs);
 }
 
 template<typename T, bool trans>
 static void
 derivative_impl(tensors::TensorReadOnly2D<T, trans> inputs,
                 tensors::TensorWriteable2D<T> outputs) {
-  tensors::ops::copy(inputs, outputs);
-  tensors::ops::set_if(static_cast<T>(1.0), [] DEVICE_CALLABLE(T value) { return value > 0; }, outputs);
+  tensors::ops::set_or_zero(static_cast<T>(1.0), inputs,
+                            [] DEVICE_CALLABLE(T value) { return value > static_cast<T>(0.0); },
+                            outputs);
 }
 
 } // details

@@ -2,6 +2,8 @@
 #define PERCEPTRON_TENSORS_TENSOR2DIMPL_HPP
 
 #include "perceptron/tensors/Tensor1D.h"
+#include "perceptron/tensors/TensorGetter.h"
+#include "perceptron/common/utils/MemoryUtils.h"
 
 namespace perceptron {
 namespace tensors {
@@ -44,11 +46,7 @@ template<typename T, bool is_transposed>
 DEVICE_CALLABLE
 inline const typename TensorReadOnly2D<T, is_transposed>::value_type *
 TensorReadOnly2D<T, is_transposed>::get(size_type y, size_type x) const noexcept {
-  if constexpr (is_transposed) {
-    return m_p_array + y + m_stride * x;
-  } else {
-    return m_p_array + m_stride * y + x;
-  }
+  return get_elem<const value_type, is_transposed>(m_p_array, y, x, m_stride);
 }
 
 template<typename T, bool is_transposed>
@@ -142,7 +140,7 @@ template<typename T, bool is_transposed>
 DEVICE_CALLABLE
 inline TensorReadOnly2D<T, !is_transposed>
 TensorReadOnly2D<T, is_transposed>::t() const noexcept {
-  return TensorReadOnly2D<T, !is_transposed>(m_p_array, m_x_dim, m_y_dim, m_stride);
+  return TensorReadOnly2D<T, !is_transposed>(m_p_array, m_y_dim, m_x_dim, m_stride);
 }
 
 template<typename T>
@@ -204,7 +202,7 @@ template<typename T>
 DEVICE_CALLABLE
 inline typename TensorWriteable2D<T>::pointer_type
 TensorWriteable2D<T>::get(size_type y, size_type x) noexcept {
-  return m_p_array + m_stride * y + x;
+  return get_elem<T, false>(m_p_array, y, x, m_stride);
 }
 
 template<typename T>
@@ -225,7 +223,7 @@ template<typename T>
 DEVICE_CALLABLE
 inline const typename TensorWriteable2D<T>::value_type *
 TensorWriteable2D<T>::get(size_type y, size_type x) const noexcept {
-  return m_p_array + m_stride * y + x;
+  return get_elem<const T, false>(m_p_array, y, x, m_stride);
 }
 
 template<typename T>
@@ -246,14 +244,14 @@ template<typename T>
 DEVICE_CALLABLE
 inline TensorWriteable1D<T>
 TensorWriteable2D<T>::get_row(size_type i) const noexcept {
-  return TensorReadOnly1D<T>(m_p_array + i * get_stride(), get_ncols(), 1);
+  return TensorWriteable1D<T>(m_p_array + i * get_stride(), get_ncols(), 1);
 }
 
 template<typename T>
 DEVICE_CALLABLE
 inline TensorWriteable1D<T>
 TensorWriteable2D<T>::get_col(size_type i) const noexcept {
-  return TensorReadOnly1D<T>(m_p_array + i, get_nrows(), get_stride());
+  return TensorWriteable1D<T>(m_p_array + i, get_nrows(), get_stride());
 }
 
 template<typename T>
@@ -306,26 +304,57 @@ TensorWriteable2D<T>::operator TensorReadOnly2D<T, false>() const {
   return to_read_only();
 }
 
-template<typename T, typename Deleter>
-TensorOwner2D<T, Deleter>::TensorOwner2D(owned_ptr_type &&owned_ptr,
-                                         size_type y_dim, size_type x_dim,
-                                         size_type stride)
+template<typename T>
+TensorOwner2D<T>::TensorOwner2D(owned_ptr_type &&owned_ptr,
+                                size_type y_dim, size_type x_dim,
+                                size_type stride)
     : m_owned_ptr(std::move(owned_ptr)), m_tensor_view(m_owned_ptr.get(), y_dim, x_dim, stride) {}
 
-template<typename T, typename Deleter>
-TensorOwner2D<T, Deleter>::TensorOwner2D(owned_ptr_type &&owned_ptr, size_type y_dim, size_type x_dim)
+template<typename T>
+TensorOwner2D<T>::TensorOwner2D(owned_ptr_type &&owned_ptr, size_type y_dim, size_type x_dim)
     : TensorOwner2D(std::move(owned_ptr), y_dim, x_dim, x_dim) {}
 
-template<typename T, typename Deleter>
-typename TensorOwner2D<T, Deleter>::owned_ptr_type
-TensorOwner2D<T, Deleter>::release() noexcept {
+template<typename T>
+typename TensorOwner2D<T>::owned_ptr_type
+TensorOwner2D<T>::release() noexcept {
   return std::move(m_owned_ptr);
 }
 
-template<typename T, typename Deleter>
-typename TensorOwner2D<T, Deleter>::view_type
-TensorOwner2D<T, Deleter>::tensor_view() const noexcept {
+template<typename T>
+typename TensorOwner2D<T>::view_type
+TensorOwner2D<T>::tensor_view() const noexcept {
   return m_tensor_view;
+}
+
+template<typename T>
+void
+TensorOwner2D<T>::to_host(cudaStream_t stream) {
+  auto attrs = utils::cu_get_pointer_attrs(m_owned_ptr.get());
+  if (utils::is_device(attrs)) {
+    auto host_owner =
+        utils::cu_make_host_memory_unique<T>(m_tensor_view.get_y_dim() * m_tensor_view.get_stride(), stream);
+    utils::cu_memcpy2D_async(host_owner.get(), m_tensor_view.get_stride(),
+                             m_owned_ptr.get(), m_tensor_view.get_stride(),
+                             m_tensor_view.get_x_dim(), m_tensor_view.get_y_dim(),
+                             cudaMemcpyDefault, stream);
+    (void) std::unique_ptr<T, utils::cu_memory_deleter_t>{m_owned_ptr.release(), utils::cu_memory_deleter_t{stream}};
+    m_owned_ptr = std::move(host_owner);
+    m_tensor_view = constructTensorWriteable2D(m_owned_ptr.get(),
+                                               m_tensor_view.get_nrows(), m_tensor_view.get_ncols(),
+                                               m_tensor_view.get_stride());
+  }
+}
+
+template<typename T>
+void
+TensorOwner2D<T>::to_device(cudaStream_t stream) {
+// TODO: finish
+}
+
+template<typename T>
+void
+TensorOwner2D<T>::to_pinned(cudaStream_t stream) {
+// TODO: finish
 }
 
 template<typename T>
@@ -334,7 +363,7 @@ constructTensorReadOnly2D(const T *p_tensor,
                           size_type y_dim,
                           size_type x_dim,
                           size_type stride) {
-  if (stride == -1) {
+  if (stride == DEFAULT_2D_STRIDE) {
     stride = x_dim;
   }
   return TensorReadOnly2D<T>{p_tensor, y_dim, x_dim, stride};
@@ -346,7 +375,7 @@ constructTensorWriteable2D(T *p_tensor,
                            size_type y_dim,
                            size_type x_dim,
                            size_type stride) {
-  if (stride == -1) {
+  if (stride == DEFAULT_2D_STRIDE) {
     stride = x_dim;
   }
   return TensorWriteable2D<T>{p_tensor, y_dim, x_dim, stride};
@@ -358,41 +387,56 @@ constructTensorOwner2D(std::unique_ptr<T, Deleter> &&owned_ptr,
                        size_type y_dim,
                        size_type x_dim,
                        size_type stride) {
-  if (stride == -1) {
+  if (stride == DEFAULT_2D_STRIDE) {
     stride = x_dim;
   }
-  return TensorOwner2D<T, Deleter>(std::move(owned_ptr), y_dim, x_dim, stride);
+  return TensorOwner2D<T>(std::move(owned_ptr), y_dim, x_dim, stride);
 }
 
 template<typename T>
 auto
 constructTensorOwnerHost2D(size_type y_dim,
                            size_type x_dim,
-                           size_type stride) {
-  if (stride == -1) {
+                           size_type stride,
+                           cudaStream_t stream) {
+  if (stride == DEFAULT_2D_STRIDE) {
     stride = x_dim;
   }
-  auto ptr = utils::cu_make_host_memory_unique<T>(y_dim * stride);
-  return TensorOwner2D<T, utils::cu_host_deleter_t>(std::move(ptr),
-                                                    y_dim, x_dim, stride);
+  auto ptr = utils::cu_make_host_memory_unique<T>(y_dim * stride, stream);
+  return TensorOwner2D<T>(std::move(ptr), y_dim, x_dim, stride);
+}
+
+template<typename T>
+auto
+constructTensorOwnerHost2D(size_type y_dim,
+                           size_type x_dim,
+                           cudaStream_t stream) {
+  return constructTensorOwnerHost2D<T>(y_dim, x_dim, DEFAULT_2D_STRIDE, stream);
 }
 
 template<typename T>
 auto
 constructTensorOwnerDevice2D(size_type y_dim,
                              size_type x_dim,
-                             size_type stride) {
-  if (stride == -1) {
+                             size_type stride,
+                             cudaStream_t stream) {
+  if (stride == DEFAULT_2D_STRIDE) {
     std::size_t pitch{};
-    auto ptr = utils::cu_make_pitched_memory_unique<T>(y_dim, x_dim, pitch);
+    auto ptr = utils::cu_make_pitched_memory_unique<T>(y_dim, x_dim, pitch, stream);
     stride = static_cast<size_type>(pitch);
-    return TensorOwner2D<T, utils::cu_memory_deleter_t>(std::move(ptr),
-                                                        y_dim, x_dim, stride);
+    return TensorOwner2D<T>(std::move(ptr), y_dim, x_dim, stride);
   } else {
-    auto ptr = utils::cu_make_memory_unique<T>(y_dim * stride);
-    return TensorOwner2D<T, utils::cu_memory_deleter_t>(std::move(ptr),
-                                                        y_dim, x_dim, stride);
+    auto ptr = utils::cu_make_memory_unique<T>(y_dim * stride, stream);
+    return TensorOwner2D<T>(std::move(ptr), y_dim, x_dim, stride);
   }
+}
+
+template<typename T>
+auto
+constructTensorOwnerDevice2D(size_type y_dim,
+                             size_type x_dim,
+                             cudaStream_t stream) {
+  return constructTensorOwnerDevice2D<T>(y_dim, x_dim, DEFAULT_2D_STRIDE, stream);
 }
 
 } // perceptron

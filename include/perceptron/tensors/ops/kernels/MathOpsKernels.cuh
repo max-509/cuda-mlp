@@ -13,6 +13,22 @@ namespace tensors {
 namespace ops {
 namespace kernels {
 
+float
+nrm2_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+            TensorReadOnly2D<float, false> src);
+
+float
+nrm2_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+            TensorReadOnly2D<float, true> src);
+
+double
+nrm2_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+            TensorReadOnly2D<double, false> src);
+
+double
+nrm2_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+            TensorReadOnly2D<double, true> src);
+
 void
 scal_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
             float alpha, TensorWriteable2D<float> x);
@@ -30,12 +46,20 @@ reverse_scal_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_
                     double alpha, TensorWriteable2D<double> x);
 
 void
-add_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
-           float alpha, TensorReadOnly1D<float> x, float beta, TensorWriteable2D<float> dst);
+add_row_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+               float alpha, TensorReadOnly1D<float> row, float beta, TensorWriteable2D<float> dst);
 
 void
-add_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
-           double alpha, TensorReadOnly1D<double> x, double beta, TensorWriteable2D<double> dst);
+add_row_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+               double alpha, TensorReadOnly1D<double> row, double beta, TensorWriteable2D<double> dst);
+
+void
+add_col_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+               float alpha, TensorReadOnly1D<float> col, float beta, TensorWriteable2D<float> dst);
+
+void
+add_col_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+               double alpha, TensorReadOnly1D<double> col, double beta, TensorWriteable2D<double> dst);
 
 void
 add_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,

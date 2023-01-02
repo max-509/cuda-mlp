@@ -22,6 +22,22 @@
 namespace perceptron {
 namespace utils {
 
+template<bool trans>
+cublasOperation_t
+trans2operation() {
+  if constexpr(trans) {
+    return CUBLAS_OP_T;
+  } else {
+    return CUBLAS_OP_N;
+  }
+}
+
+cublasOperation_t
+trans2operation(bool trans);
+
+cublasOperation_t
+inverse_trans(cublasOperation_t trans);
+
 class CuBLASHandle {
 public:
   static cublasHandle_t getInstance();

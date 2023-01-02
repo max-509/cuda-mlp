@@ -27,28 +27,32 @@ SquaredLoss::compute(tensors::TensorReadOnly2D<float, false> preds,
   return compute_impl(preds, trues);
 }
 
-tensors::TensorOwnerDevice2D<float>
+void
 SquaredLoss::derivative(tensors::TensorReadOnly2D<float, true> preds,
-                        tensors::TensorReadOnly2D<float, true> trues) {
-  return derivative_impl(preds, trues);
+                        tensors::TensorReadOnly2D<float, true> trues,
+                        tensors::TensorWriteable2D<float> outputs) {
+  derivative_impl(preds, trues, outputs);
 }
 
-tensors::TensorOwnerDevice2D<float>
+void
 SquaredLoss::derivative(tensors::TensorReadOnly2D<float, true> preds,
-                        tensors::TensorReadOnly2D<float, false> trues) {
-  return derivative_impl(preds, trues);
+                        tensors::TensorReadOnly2D<float, false> trues,
+                        tensors::TensorWriteable2D<float> outputs) {
+  derivative_impl(preds, trues, outputs);
 }
 
-tensors::TensorOwnerDevice2D<float>
+void
 SquaredLoss::derivative(tensors::TensorReadOnly2D<float, false> preds,
-                        tensors::TensorReadOnly2D<float, true> trues) {
-  return derivative_impl(preds, trues);
+                        tensors::TensorReadOnly2D<float, true> trues,
+                        tensors::TensorWriteable2D<float> outputs) {
+  derivative_impl(preds, trues, outputs);
 }
 
-tensors::TensorOwnerDevice2D<float>
+void
 SquaredLoss::derivative(tensors::TensorReadOnly2D<float, false> preds,
-                        tensors::TensorReadOnly2D<float, false> trues) {
-  return derivative_impl(preds, trues);
+                        tensors::TensorReadOnly2D<float, false> trues,
+                        tensors::TensorWriteable2D<float> outputs) {
+  derivative_impl(preds, trues, outputs);
 }
 
 } // perceptron

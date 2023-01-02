@@ -7,7 +7,6 @@
 #include <type_traits>
 
 namespace perceptron {
-namespace common {
 namespace functions {
 
 template<typename T>
@@ -44,7 +43,7 @@ pow(T b, T e) {
 }
 
 template<typename T>
-DEVICE_CALLABLE
+__device__
 T
 uniform(curandState_t *state, T a, T b) {
   if constexpr (std::is_same_v<T, float>) {
@@ -55,7 +54,7 @@ uniform(curandState_t *state, T a, T b) {
 }
 
 template<typename T>
-DEVICE_CALLABLE
+__device__
 T
 uniform(curandState_t *state) {
   if constexpr (std::is_same_v<T, float>) {
@@ -66,7 +65,7 @@ uniform(curandState_t *state) {
 }
 
 template<typename T>
-DEVICE_CALLABLE
+__device__
 T
 normal(curandState_t *state, T mean, T stddev) {
   if constexpr (std::is_same_v<T, float>) {
@@ -77,7 +76,7 @@ normal(curandState_t *state, T mean, T stddev) {
 }
 
 template<typename T>
-DEVICE_CALLABLE
+__device__
 T
 normal(curandState_t *state) {
   if constexpr (std::is_same_v<T, float>) {
@@ -88,9 +87,9 @@ normal(curandState_t *state) {
 }
 
 template<typename T>
-DEVICE_CALLABLE
+__device__
 T
-log_normal(curandState_t *state, T mean = 0.0, T stddev = 1.0) {
+log_normal(curandState_t *state, T mean = static_cast<T>(0.0), T stddev = static_cast<T>(1.0)) {
   if constexpr (std::is_same_v<T, float>) {
     return curand_log_normal(state, mean, stddev);
   } else {
@@ -99,7 +98,6 @@ log_normal(curandState_t *state, T mean = 0.0, T stddev = 1.0) {
 }
 
 } // perceptron
-} // common
 } // functions
 
 #endif //PERCEPTRON_COMMON_FUNCTIONS_MATHFUNCTIONS_H

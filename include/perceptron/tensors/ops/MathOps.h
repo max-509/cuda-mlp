@@ -25,43 +25,47 @@ gemm(T alpha,
      TensorReadOnly2D<T, transa> A,
      TensorReadOnly2D<T, transb> B,
      T beta,
-     TensorWriteable2D<T> C) {
+     TensorWriteable2D<T> C,
+     cudaStream_t stream = nullptr) {
   is_valid_type<T>();
   auto handle = utils::CuBLASHandle::getInstance();
-  auto cu_transa = transa ? CUBLAS_OP_T : CUBLAS_OP_N;
-  auto cu_transb = transb ? CUBLAS_OP_T : CUBLAS_OP_N;
+  utils::CuBLASHandle::set_stream(stream);
+  auto cu_transa = utils::trans2operation<transa>();
+  auto cu_transb = utils::trans2operation<transb>();
 
-  auto m  = static_cast<int>(A.get_nrows());
-  auto n  = static_cast<int>(A.get_ncols());
-  auto k = static_cast<int>(B.get_ncols());
+  auto m = static_cast<int>(A.get_nrows());
+  auto n = static_cast<int>(B.get_ncols());
+  auto k = static_cast<int>(A.get_ncols());
 
-  if (n != B.get_nrows()) {
+  if (k != B.get_nrows()) {
     std::stringstream stream;
     stream << "Bad sizes for A@B matrices multiplication: " << A.shape_repr() << " and " << B.shape_repr();
     throw std::invalid_argument{stream.str()};
   }
-  if (m != C.get_nrows() && k != C.get_ncols()) {
+  if (m != C.get_nrows() && n != C.get_ncols()) {
     std::stringstream stream;
     stream << "Bad C matrix size " << C.shape_repr() << " for A@B result (" << m << ", " << k << ")";
     throw std::invalid_argument{stream.str()};
   }
 
   if constexpr (std::is_same_v<T, float>) {
+    // Because CuBLAS is column-majored, we solve (AB)^T = B^T A^T = C^T
     CUBLAS_CHECK(cublasSgemm(handle,
-                             cu_transa, cu_transb,
-                             m, n, k,
+                             cu_transb, cu_transa,
+                             n, m, k,
                              &alpha,
-                             A.get(), A.get_stride(),
                              B.get(), B.get_stride(),
+                             A.get(), A.get_stride(),
                              &beta,
                              C.get(), C.get_stride()));
   } else {
+    // Because CuBLAS is column-majored, we solve (AB)^T = B^T A^T = C^T
     CUBLAS_CHECK(cublasDgemm(handle,
-                             cu_transa, cu_transb,
-                             m, n, k,
+                             cu_transb, cu_transa,
+                             n, m, k,
                              &alpha,
-                             A.get(), A.get_stride(),
                              B.get(), B.get_stride(),
+                             A.get(), A.get_stride(),
                              &beta,
                              C.get(), C.get_stride()));
   }
@@ -73,11 +77,13 @@ geam(TensorReadOnly2D<T, transa> A,
      T alpha,
      TensorReadOnly2D<T, transb> B,
      T beta,
-     TensorWriteable2D<T> C) {
+     TensorWriteable2D<T> C,
+     cudaStream_t stream = nullptr) {
   is_valid_type<T>();
   auto handle = utils::CuBLASHandle::getInstance();
-  auto cu_transa = transa ? CUBLAS_OP_T : CUBLAS_OP_N;
-  auto cu_transb = transb ? CUBLAS_OP_T : CUBLAS_OP_N;
+  utils::CuBLASHandle::set_stream(stream);
+  auto cu_transa = utils::trans2operation<transa>();
+  auto cu_transb = utils::trans2operation<transb>();
 
   auto m = static_cast<int>(A.get_nrows());
   auto n = static_cast<int>(A.get_ncols());
@@ -88,21 +94,23 @@ geam(TensorReadOnly2D<T, transa> A,
   }
   if (m != C.get_nrows() || n != C.get_ncols()) {
     std::stringstream stream;
-    stream << "Bad C matrix size " << C.shape_repr() <<  " for A+B result: (" << n << ", " << m << ")";
+    stream << "Bad C matrix size " << C.shape_repr() << " for A+B result: (" << n << ", " << m << ")";
     throw std::invalid_argument{stream.str()};
   }
 
   if constexpr (std::is_same_v<T, float>) {
+    // Because of column-major format, we compute A^T + B^T = C^T
     CUBLAS_CHECK(cublasSgeam(handle,
                              cu_transa, cu_transb,
-                             m, n,
+                             n, m,
                              &alpha, A.get(), A.get_stride(),
                              &beta, B.get(), B.get_stride(),
                              C.get(), C.get_stride()));
   } else {
+    // Because of column-major format, we compute A^T + B^T = C^T
     CUBLAS_CHECK(cublasDgeam(handle,
                              cu_transa, cu_transb,
-                             m, n,
+                             n, m,
                              &alpha, A.get(), A.get_stride(),
                              &beta, B.get(), B.get_stride(),
                              C.get(), C.get_stride()));
@@ -114,34 +122,9 @@ void
 geam(TensorReadOnly2D<T, transa> A,
      T alpha,
      TensorWriteable2D<T> C,
-     T beta) {
-  is_valid_type<T>();
-  auto handle = utils::CuBLASHandle::getInstance();
-  auto cu_transa = transa ? CUBLAS_OP_T : CUBLAS_OP_N;
-
-  auto m = static_cast<int>(A.get_nrows());
-  auto n = static_cast<int>(A.get_ncols());
-  if (m != C.get_nrows() || n != C.get_ncols()) {
-    std::stringstream stream;
-    stream << "Bad C matrix size " << C.shape_repr() << " for summation with matrix A with size " << A.shape_repr();
-    throw std::invalid_argument{stream.str()};
-  }
-
-  if constexpr (std::is_same_v<T, float>) {
-    CUBLAS_CHECK(cublasSgeam(handle,
-                             cu_transa, CUBLAS_OP_N,
-                             m, n,
-                             &alpha, A.get(), A.get_stride(),
-                             &beta, C.get(), C.get_stride(),
-                             C.get(), C.get_stride()));
-  } else {
-    CUBLAS_CHECK(cublasDgeam(handle,
-                             cu_transa, CUBLAS_OP_N,
-                             m, n,
-                             &alpha, A.get(), A.get_stride(),
-                             &beta, C.get(), C.get_stride(),
-                             C.get(), C.get_stride()));
-  }
+     T beta,
+     cudaStream_t stream = nullptr) {
+  geam(A, alpha, C.to_read_only(), beta, C, stream);
 }
 
 template<typename T, bool transa>
@@ -150,10 +133,12 @@ gemv(T alpha,
      TensorReadOnly2D<T, transa> A,
      TensorReadOnly1D<T> x,
      T beta,
-     TensorWriteable1D<T> y) {
+     TensorWriteable1D<T> y,
+     cudaStream_t stream = nullptr) {
   is_valid_type<T>();
   auto handle = utils::CuBLASHandle::getInstance();
-  auto cu_transa = transa ? CUBLAS_OP_T : CUBLAS_OP_N;
+  utils::CuBLASHandle::set_stream(stream);
+  auto cu_transa = utils::trans2operation<transa>();
 
   auto m = static_cast<int>(A.get_nrows());
   auto n = static_cast<int>(A.get_ncols());
@@ -164,7 +149,8 @@ gemv(T alpha,
   }
 
   if constexpr (std::is_same_v<T, float>) {
-    CUBLAS_CHECK(cublasSgemv(handle, cu_transa,
+    // We transpose of matrix A, because of column-wise
+    CUBLAS_CHECK(cublasSgemv(handle, utils::inverse_trans(cu_transa),
                              m, n,
                              &alpha,
                              A.get(), A.get_stride(),
@@ -172,7 +158,8 @@ gemv(T alpha,
                              &beta,
                              y.get(), y.get_stride()));
   } else {
-    CUBLAS_CHECK(cublasDgemv(handle, cu_transa,
+    // Because of column-major format, we compute A^T + C^T = C^T
+    CUBLAS_CHECK(cublasDgemv(handle, utils::inverse_trans(cu_transa),
                              m, n,
                              &alpha,
                              A.get(), A.get_stride(),
@@ -184,9 +171,11 @@ gemv(T alpha,
 
 template<typename T>
 T
-nrm2(TensorReadOnly1D<T> x) {
+nrm2(TensorReadOnly1D<T> x, cudaStream_t stream = nullptr) {
   is_valid_type<T>();
+
   auto handle = utils::CuBLASHandle::getInstance();
+  utils::CuBLASHandle::set_stream(stream);
   auto n = static_cast<int>(x.get_size());
   auto incx = static_cast<int>(x.get_stride());
 
@@ -200,11 +189,25 @@ nrm2(TensorReadOnly1D<T> x) {
   return result;
 }
 
+template<typename T, bool trans>
+T
+nrm2(TensorReadOnly2D<T, trans> x, cudaStream_t stream = nullptr) {
+  is_valid_type<T>();
+
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
+  dim3 blocks(utils::block_size_by_threads(x.get_ncols(), threads.x),
+              utils::block_size_by_threads(x.get_nrows(), threads.y));
+
+  return kernels::nrm2_kernel(blocks, threads, 0, stream, x);
+}
+
 template<typename T>
 void
-scal(T alpha, TensorWriteable1D<T> x) {
+scal(T alpha, TensorWriteable1D<T> x, cudaStream_t stream = nullptr) {
   is_valid_type<T>();
+
   auto handle = utils::CuBLASHandle::getInstance();
+  utils::CuBLASHandle::set_stream(stream);
   auto n = static_cast<int>(x.get_size());
   auto incx = static_cast<int>(x.get_stride());
 
@@ -220,7 +223,7 @@ void
 scal(T alpha, TensorWriteable2D<T> x, cudaStream_t stream = nullptr) {
   is_valid_type<T>();
 
-  dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
   dim3 blocks(utils::block_size_by_threads(x.get_ncols(), threads.x),
               utils::block_size_by_threads(x.get_nrows(), threads.y));
 
@@ -232,7 +235,7 @@ void
 reverse_scal(T alpha, TensorWriteable2D<T> x, cudaStream_t stream = nullptr) {
   is_valid_type<T>();
 
-  dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
   dim3 blocks(utils::block_size_by_threads(x.get_ncols(), threads.x),
               utils::block_size_by_threads(x.get_nrows(), threads.y));
 
@@ -241,18 +244,34 @@ reverse_scal(T alpha, TensorWriteable2D<T> x, cudaStream_t stream = nullptr) {
 
 template<typename T>
 void
-add(T alpha,
-    TensorReadOnly1D<T> x,
-    T beta,
-    TensorWriteable2D<T> dst,
-    cudaStream_t stream = nullptr) {
+add_row(T alpha,
+        TensorReadOnly1D<T> row,
+        T beta,
+        TensorWriteable2D<T> dst,
+        cudaStream_t stream = nullptr) {
   is_valid_type<T>();
 
-  dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
   dim3 blocks(utils::block_size_by_threads(dst.get_ncols(), threads.x),
               utils::block_size_by_threads(dst.get_nrows(), threads.y));
 
-  kernels::add_kernel(blocks, threads, 0, stream, alpha, x, beta, dst);
+  kernels::add_row_kernel(blocks, threads, 0, stream, alpha, row, beta, dst);
+}
+
+template<typename T>
+void
+add_col(T alpha,
+        TensorReadOnly1D<T> col,
+        T beta,
+        TensorWriteable2D<T> dst,
+        cudaStream_t stream = nullptr) {
+  is_valid_type<T>();
+
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
+  dim3 blocks(utils::block_size_by_threads(dst.get_ncols(), threads.x),
+              utils::block_size_by_threads(dst.get_nrows(), threads.y));
+
+  kernels::add_col_kernel(blocks, threads, 0, stream, alpha, col, beta, dst);
 }
 
 template<typename T>
@@ -260,7 +279,7 @@ void
 add(T alpha, TensorWriteable2D<T> x, cudaStream_t stream = nullptr) {
   is_valid_type<T>();
 
-  dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
   dim3 blocks(utils::block_size_by_threads(x.get_ncols(), threads.x),
               utils::block_size_by_threads(x.get_nrows(), threads.y));
 
@@ -272,7 +291,7 @@ void
 add_negative(T alpha, TensorWriteable2D<T> x, cudaStream_t stream = nullptr) {
   is_valid_type<T>();
 
-  dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
   dim3 blocks(utils::block_size_by_threads(x.get_ncols(), threads.x),
               utils::block_size_by_threads(x.get_nrows(), threads.y));
 
@@ -287,11 +306,21 @@ element_wise_mul(TensorReadOnly2D<T, trans_t1> t1,
                  cudaStream_t stream = nullptr) {
   is_valid_type<T>();
 
-  dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
   dim3 blocks(utils::block_size_by_threads(dst.get_ncols(), threads.x),
               utils::block_size_by_threads(dst.get_nrows(), threads.y));
 
   kernels::element_wise_mul_kernel(blocks, threads, 0, stream, t1, t2, dst);
+}
+
+template<typename T, bool trans_t1, bool trans_t2>
+TensorOwner2D<T>
+element_wise_mul(TensorReadOnly2D<T, trans_t1> t1,
+                 TensorReadOnly2D<T, trans_t2> t2,
+                 cudaStream_t stream = nullptr) {
+  auto output_owner = constructTensorOwnerDevice2D<T>(t1.get_y_dim(), t1.get_x_dim(), DEFAULT_2D_STRIDE, stream);
+  element_wise_mul(t1, t2, output_owner.tensor_view(), stream);
+  return output_owner;
 }
 
 template<typename T, bool trans_t1>
@@ -301,7 +330,7 @@ element_wise_mul(TensorReadOnly2D<T, trans_t1> t1,
                  cudaStream_t stream = nullptr) {
   is_valid_type<T>();
 
-  dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
   dim3 blocks(utils::block_size_by_threads(dst.get_ncols(), threads.x),
               utils::block_size_by_threads(dst.get_nrows(), threads.y));
 
@@ -313,11 +342,19 @@ void
 exp(TensorReadOnly2D<T, trans_src> src, TensorWriteable2D<T> dst, cudaStream_t stream = nullptr) {
   is_valid_type<T>();
 
-  dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
   dim3 blocks(utils::block_size_by_threads(src.get_ncols(), threads.x),
               utils::block_size_by_threads(src.get_nrows(), threads.y));
 
   kernels::exp_kernel(blocks, threads, 0, stream, src, dst);
+}
+
+template<typename T, bool trans_src>
+TensorOwner2D<T>
+exp(TensorReadOnly2D<T, trans_src> src, cudaStream_t stream = nullptr) {
+  auto output_owner = constructTensorOwnerDevice2D<T>(src.get_y_dim(), src.get_x_dim(), DEFAULT_2D_STRIDE, stream);
+  exp(src, output_owner.tensor_view(), stream);
+  return output_owner;
 }
 
 template<typename T>
@@ -325,7 +362,7 @@ void
 exp(TensorWriteable2D<T> dst, cudaStream_t stream = nullptr) {
   is_valid_type<T>();
 
-  dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
   dim3 blocks(utils::block_size_by_threads(dst.get_ncols(), threads.x),
               utils::block_size_by_threads(dst.get_nrows(), threads.y));
 
@@ -337,11 +374,19 @@ void
 negative_exp(TensorReadOnly2D<T, trans_src> src, TensorWriteable2D<T> dst, cudaStream_t stream = nullptr) {
   is_valid_type<T>();
 
-  dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
   dim3 blocks(utils::block_size_by_threads(src.get_ncols(), threads.x),
               utils::block_size_by_threads(src.get_nrows(), threads.y));
 
   kernels::negative_exp_kernel(blocks, threads, 0, stream, src, dst);
+}
+
+template<typename T, bool trans_src>
+TensorOwner2D<T>
+negative_exp(TensorReadOnly2D<T, trans_src> src, cudaStream_t stream = nullptr) {
+  auto dst_owner = constructTensorOwnerDevice2D<T>(src.get_nrows(), src.get_ncols(), DEFAULT_2D_STRIDE, stream);
+  negative_exp(src, dst_owner.tensor_view(), stream);
+  return dst_owner;
 }
 
 template<typename T>
@@ -349,7 +394,7 @@ void
 negative_exp(TensorWriteable2D<T> dst, cudaStream_t stream = nullptr) {
   is_valid_type<T>();
 
-  dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
   dim3 blocks(utils::block_size_by_threads(dst.get_ncols(), threads.x),
               utils::block_size_by_threads(dst.get_nrows(), threads.y));
 
@@ -366,11 +411,22 @@ generate(curand_distr_tag tag,
 
   auto curand_states = utils::curand_create_states(seed, dst.get_nrows() * dst.get_ncols(), stream);
 
-  dim3 threads(utils::DEFAULT_BLOCK_SIZE, utils::DEFAULT_BLOCK_SIZE);
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
   dim3 blocks(utils::block_size_by_threads(dst.get_ncols(), threads.x),
               utils::block_size_by_threads(dst.get_nrows(), threads.y));
 
   kernels::generate_kernel(blocks, threads, 0, stream, curand_states.get(), dst, tag);
+}
+
+template<typename T, typename curand_distr_tag>
+TensorOwner2D<T>
+generate(curand_distr_tag tag,
+         size_type nrows, size_type ncols,
+         size_type seed = 42,
+         cudaStream_t stream = nullptr) {
+  auto dst_owner = constructTensorOwnerDevice2D<T>(nrows, ncols, DEFAULT_2D_STRIDE, stream);
+  generate(tag, dst_owner.tensor_view(), seed, stream);
+  return dst_owner;
 }
 
 } // perceptron

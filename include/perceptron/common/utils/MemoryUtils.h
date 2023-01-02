@@ -3,6 +3,7 @@
 
 #include "perceptron/common/Common.h"
 #include "perceptron/common/utils/CudaUtils.h"
+#include "perceptron/common/utils/StreamUtils.h"
 
 #include <cuda_runtime.h>
 
@@ -10,22 +11,42 @@ namespace perceptron {
 namespace utils {
 
 struct cu_memory_deleter_t {
+  cudaStream_t stream{nullptr};
+
   void
   operator()(void *ptr) const {
-    CUDA_CHECK(cudaFree(ptr));
+    if (nullptr == stream) {
+      if (auto ret_code = cudaFreeAsync(ptr, stream); ret_code == cudaErrorNotSupported) {
+        CUDA_CHECK(cudaStreamSynchronize(stream));
+        CUDA_CHECK(cudaFree(ptr));
+      } else {
+        CUDA_CHECK(ret_code);
+      }
+    } else {
+      CUDA_CHECK(cudaFree(ptr));
+    }
   }
 };
 
 struct cu_pinned_deleter_t {
+  cudaStream_t stream = nullptr;
+
   void
   operator()(void *ptr) const {
+    if (nullptr == stream) {
+      CUDA_CHECK(cudaStreamSynchronize(stream));
+    }
     CUDA_CHECK(cudaHostUnregister(ptr));
   }
 };
 
 struct cu_host_deleter_t {
+  cudaStream_t stream;
   void
   operator()(void *ptr) const {
+    if (nullptr == stream) {
+      CUDA_CHECK(cudaStreamSynchronize(stream));
+    }
     CUDA_CHECK(cudaFreeHost(ptr));
   }
 };
@@ -43,56 +64,72 @@ template<typename T>
 CudaDeviceOwner<T>
 cu_make_memory_unique(std::size_t size, cudaStream_t stream = nullptr) {
   T *ptr = nullptr;
-  CUDA_CHECK(cudaMallocAsync(&ptr, size * sizeof(T), stream));
+  if (auto ret_code = cudaMallocAsync(&ptr, size * sizeof(T), stream); ret_code == cudaErrorNotSupported) {
+    CUDA_CHECK(cudaStreamSynchronize(stream));
+    CUDA_CHECK(cudaMalloc(&ptr, size * sizeof(T)));
+  } else {
+    CUDA_CHECK(ret_code);
+  }
 
-  return CudaDeviceOwner<T>(ptr, cu_memory_deleter_t{});
+
+  return CudaDeviceOwner<T>(ptr, cu_memory_deleter_t{stream});
 }
 
 template<typename T>
 CudaDeviceOwner<T>
 cu_make_memory_unique(cudaStream_t stream = nullptr) {
-  return cu_make_memory_unique<T>(1);
+  return cu_make_memory_unique<T>(1, stream);
 }
 
 template<typename T>
 CudaDeviceOwner<T>
 cu_make_pitched_memory_unique(std::size_t nrows,
                               std::size_t ncols,
-                              std::size_t &pitch) {
-  T *ptr = nullptr;
+                              std::size_t &pitch,
+                              cudaStream_t stream = nullptr) {
+  T *ptr;
+  if (nullptr != stream) {
+    CUDA_CHECK(cudaStreamSynchronize(stream));
+  }
   CUDA_CHECK(cudaMallocPitch(&ptr, &pitch, sizeof(T) * ncols, nrows));
   pitch /= sizeof(T);
 
-  return CudaDeviceOwner<T>(ptr, cu_memory_deleter_t{});
+  return CudaDeviceOwner<T>(ptr, cu_memory_deleter_t{stream});
 }
 
 template<typename T>
 CudaPinnedOwner<T>
-cu_make_pinned_memory_unique(T *ptr, const std::size_t size) {
+cu_make_pinned_memory_unique(T *ptr, const std::size_t size, cudaStream_t stream = nullptr) {
+  if (nullptr != stream) {
+    CUDA_CHECK(cudaStreamSynchronize(stream));
+  }
   CUDA_CHECK(cudaHostRegister(ptr, sizeof(T) * size, cudaHostRegisterDefault));
 
-  return CudaPinnedOwner<T>{ptr, cu_pinned_deleter_t{}};
+  return CudaPinnedOwner<T>{ptr, cu_pinned_deleter_t{stream}};
 }
 
 template<typename T>
 CudaPinnedOwner<T>
-cu_make_pinned_memory_unique(T *ptr) {
-  return cu_make_pinned_memory_unique(ptr, 1);
+cu_make_pinned_memory_unique(T *ptr, cudaStream_t stream = nullptr) {
+  return cu_make_pinned_memory_unique(ptr, 1, stream);
 }
 
 template<typename T>
 CudaHostOwner<T>
-cu_make_host_memory_unique(const std::size_t size) {
+cu_make_host_memory_unique(const std::size_t size, cudaStream_t stream = nullptr) {
   T *ptr = nullptr;
+  if (nullptr != stream) {
+    CUDA_CHECK(cudaStreamSynchronize(stream));
+  }
   CUDA_CHECK(cudaHostAlloc(&ptr, sizeof(T) * size, cudaHostAllocDefault));
 
-  return CudaHostOwner<T>{ptr, cu_host_deleter_t{}};
+  return CudaHostOwner<T>{ptr, cu_host_deleter_t{stream}};
 }
 
 template<typename T>
 CudaHostOwner<T>
-cu_make_host_memory_unique() {
-  return cu_make_host_memory_unique<T>(1);
+cu_make_host_memory_unique(cudaStream_t stream = nullptr) {
+  return cu_make_host_memory_unique<T>(1, stream);
 }
 
 template<typename T>
@@ -126,6 +163,7 @@ cu_memset_async(T *devPtr, int value, size_t count, cudaStream_t stream = (cudaS
 
 template<typename T>
 void
+DEVICE_CALLABLE
 cu_memset2D_async(T *devPtr,
                   size_t pitch,
                   int value,
@@ -134,6 +172,35 @@ cu_memset2D_async(T *devPtr,
                   cudaStream_t stream = (cudaStream_t) nullptr) {
   CUDA_CHECK(cudaMemset2DAsync(devPtr, sizeof(T) * pitch, value, sizeof(T) * width, height, stream));
 }
+
+template<typename T>
+CudaDeviceOwner<T>
+cu_copy_self_to_device(const T *self, cudaStream_t stream = nullptr) {
+  auto self_device = cu_make_memory_unique<T>(stream);
+  cu_memcpy_async(self_device.get(), self, 1, cudaMemcpyDefault, stream);
+  return self_device;
+}
+
+template<typename T>
+cudaPointerAttributes
+cu_get_pointer_attrs(const T *ptr) {
+  cudaPointerAttributes attrs{};
+  CUDA_CHECK(cudaPointerGetAttributes(&attrs, ptr));
+  return attrs;
+}
+
+bool
+is_unregistered_host(const cudaPointerAttributes &attrs);
+
+bool
+is_device(const cudaPointerAttributes &attrs);
+
+bool
+is_host(const cudaPointerAttributes &attrs);
+
+bool
+is_managed(const cudaPointerAttributes &attrs);
+
 
 } // perceptron
 } // utils

@@ -26,7 +26,8 @@
 namespace perceptron {
 namespace utils {
 
-static constexpr size_type DEFAULT_BLOCK_SIZE = 16;
+inline constexpr size_type DEFAULT_BLOCK_SIZE_1D = 256;
+inline constexpr size_type DEFAULT_BLOCK_SIZE_2D = 16;
 
 size_type
 block_size_by_threads(size_type size, size_type n_threads);

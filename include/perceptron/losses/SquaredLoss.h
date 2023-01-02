@@ -10,6 +10,8 @@ namespace losses {
 
 class SquaredLoss : public ILoss {
 public:
+  using ILoss::derivative;
+
   double
   compute(tensors::TensorReadOnly2D<float, true> preds, tensors::TensorReadOnly2D<float, true> trues) override;
 
@@ -22,30 +24,37 @@ public:
   double
   compute(tensors::TensorReadOnly2D<float, false> preds, tensors::TensorReadOnly2D<float, false> trues) override;
 
-  tensors::TensorOwnerDevice2D<float>
+  void
   derivative(tensors::TensorReadOnly2D<float, true> preds,
-             tensors::TensorReadOnly2D<float, true> trues) override;
+             tensors::TensorReadOnly2D<float, true> trues,
+             tensors::TensorWriteable2D<float> outputs) override;
 
-  tensors::TensorOwnerDevice2D<float>
+  void
   derivative(tensors::TensorReadOnly2D<float, true> preds,
-             tensors::TensorReadOnly2D<float, false> trues) override;
+             tensors::TensorReadOnly2D<float, false> trues,
+             tensors::TensorWriteable2D<float> outputs) override;
 
-  tensors::TensorOwnerDevice2D<float>
+  void
   derivative(tensors::TensorReadOnly2D<float, false> preds,
-             tensors::TensorReadOnly2D<float, true> trues) override;
+             tensors::TensorReadOnly2D<float, true> trues,
+             tensors::TensorWriteable2D<float> outputs) override;
 
-  tensors::TensorOwnerDevice2D<float>
+  void
   derivative(tensors::TensorReadOnly2D<float, false> preds,
-             tensors::TensorReadOnly2D<float, false> trues) override;
+             tensors::TensorReadOnly2D<float, false> trues,
+             tensors::TensorWriteable2D<float> outputs) override;
 
 private:
   template<typename T, bool trans_preds, bool trans_trues>
   double
-  compute_impl(tensors::TensorReadOnly2D<T, trans_preds> preds, tensors::TensorReadOnly2D<T, trans_trues> trues);
+  compute_impl(tensors::TensorReadOnly2D<T, trans_preds> preds,
+               tensors::TensorReadOnly2D<T, trans_trues> trues);
 
   template<typename T, bool trans_preds, bool trans_trues>
-  tensors::TensorOwnerDevice2D<T>
-  derivative_impl(tensors::TensorReadOnly2D<T, trans_preds> preds, tensors::TensorReadOnly2D<T, trans_trues> trues);
+  void
+  derivative_impl(tensors::TensorReadOnly2D<T, trans_preds> preds,
+                  tensors::TensorReadOnly2D<T, trans_trues> trues,
+                  tensors::TensorWriteable2D<T> outputs);
 };
 
 template<typename T, bool trans_preds, bool trans_trues>
@@ -59,31 +68,23 @@ SquaredLoss::compute_impl(tensors::TensorReadOnly2D<T, trans_preds> preds,
 
   tensors::ops::geam(preds, static_cast<T>(1.0),
                      trues, static_cast<T>(-1.0), diff_tensor_view);
-  auto loss = tensors::ops::nrm2(tensors::constructTensorReadOnly1D(diff_tensor_view.get(),
-                                                                    diff_tensor_view.get_nrows()
-                                                                        * diff_tensor_view.get_ncols()));
+  auto loss = tensors::ops::nrm2(diff_tensor_view.to_read_only());
 
   return loss / static_cast<float>(preds.get_nrows());
 }
 
 template<typename T, bool trans_preds, bool trans_trues>
-tensors::TensorOwnerDevice2D<T>
+void
 SquaredLoss::derivative_impl(tensors::TensorReadOnly2D<T, trans_preds> preds,
-                             tensors::TensorReadOnly2D<T, trans_trues> trues) {
+                             tensors::TensorReadOnly2D<T, trans_trues> trues,
+                             tensors::TensorWriteable2D<T> outputs) {
   is_valid_type<T>();
-  auto diff_tensor_owner =
-      tensors::constructTensorOwnerDevice2D<T>(preds.get_nrows(), preds.get_ncols());
-  auto diff_tensor_view = diff_tensor_owner.tensor_view();
 
   tensors::ops::geam(preds, static_cast<T>(1.0),
-                     trues, static_cast<T>(-1.0), diff_tensor_view);
+                     trues, static_cast<T>(-1.0), outputs);
 
   const auto derivative_coeff = static_cast<T>(2.0 / preds.get_nrows());
-  tensors::ops::scal(derivative_coeff, tensors::constructTensorWriteable1D(diff_tensor_view.get(),
-                                                                           diff_tensor_view.get_nrows()
-                                                                               * diff_tensor_view.get_ncols()));
-
-  return diff_tensor_owner;
+  tensors::ops::scal(derivative_coeff, outputs);
 }
 
 } // perceptron

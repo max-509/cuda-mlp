@@ -175,10 +175,10 @@ private:
   size_type m_stride{};
 };
 
-template<typename T, typename Deleter>
+template<typename T>
 class TensorOwner1D final {
 private:
-  using owned_ptr_type = std::unique_ptr<T, Deleter>;
+  using owned_ptr_type = std::unique_ptr<T, std::function<void(void *)>>;
   using view_type = TensorWriteable1D<std::remove_extent_t<T>>;
 public:
   TensorOwner1D();
@@ -198,36 +198,49 @@ public:
   view_type
   tensor_view() const noexcept;
 
+  void
+  to_host(cudaStream_t stream = nullptr);
+
+  void
+  to_device(cudaStream_t stream = nullptr);
+
+  void
+  to_pinned(cudaStream_t stream = nullptr);
+
 private:
   owned_ptr_type m_owned_ptr;
   view_type m_tensor_view;
 };
 
-template<typename T>
-auto
-constructTensorReadOnly1D(const T *p_tensor, size_type size, size_type stride = 1);
+inline constexpr size_type DEFAULT_1D_STRIDE = 1;
 
 template<typename T>
 auto
-constructTensorWriteable1D(T *p_tensor, size_type size, size_type stride = 1);
+constructTensorReadOnly1D(const T *p_tensor, size_type size, size_type stride = DEFAULT_1D_STRIDE);
+
+template<typename T>
+auto
+constructTensorWriteable1D(T *p_tensor, size_type size, size_type stride = DEFAULT_1D_STRIDE);
 
 template<typename T, typename Deleter>
 auto
-constructTensorOwner1D(std::unique_ptr<T, Deleter> &&owned_ptr, size_type size, size_type stride = 1);
+constructTensorOwner1D(std::unique_ptr<T, Deleter> &&owned_ptr, size_type size, size_type stride = DEFAULT_1D_STRIDE);
 
 template<typename T>
 auto
-constructTensorOwnerHost1D(size_type size, size_type stride = 1);
+constructTensorOwnerHost1D(size_type size, size_type stride = DEFAULT_1D_STRIDE, cudaStream_t stream = nullptr);
 
 template<typename T>
 auto
-constructTensorOwnerDevice1D(size_type size, size_type stride = 1);
+constructTensorOwnerHost1D(size_type size, cudaStream_t stream);
 
 template<typename T>
-using TensorOwnerHost1D = TensorOwner1D<T, utils::cu_host_deleter_t>;
+auto
+constructTensorOwnerDevice1D(size_type size, size_type stride = DEFAULT_1D_STRIDE, cudaStream_t stream = nullptr);
 
 template<typename T>
-using TensorOwnerDevice1D = TensorOwner1D<T, utils::cu_memory_deleter_t>;
+auto
+constructTensorOwnerDevice1D(size_type size, cudaStream_t stream);
 
 } // perceptron
 } // tensors

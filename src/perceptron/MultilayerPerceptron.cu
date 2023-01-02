@@ -38,7 +38,7 @@ MultilayerPerceptron::builder() {
   return std::make_shared<MultilayerPerceptronBuilder>();
 }
 
-tensors::TensorOwnerDevice2D<float>
+tensors::TensorOwner2D<float>
 MultilayerPerceptron::transform(tensors::TensorReadOnly1D<float> inputs) {
   return transform(inputs.to_2d());
 }

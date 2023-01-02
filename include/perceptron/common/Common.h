@@ -54,8 +54,8 @@ template<typename T>
 static constexpr auto is_float_or_double_v = is_float_or_double<T>::value;
 
 template<typename DataType, typename TimeType>
-static constexpr auto
-    is_float_or_double_data_time_types_v = is_float_or_double<DataType>::value && is_float_or_double<TimeType>::value;
+static constexpr auto is_float_or_double_data_time_types_v =
+    is_float_or_double<DataType>::value && is_float_or_double<TimeType>::value;
 
 template<typename T>
 constexpr void is_valid_type() {

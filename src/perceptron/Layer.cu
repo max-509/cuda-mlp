@@ -61,36 +61,36 @@ Layer::update_gradients(tensors::TensorReadOnly2D<float, true> forwards_transpos
   update_gradients_impl(forwards_transposed, errors);
 }
 
-tensors::TensorOwnerDevice2D<float>
+tensors::TensorOwner2D<float>
 Layer::compute_errors(tensors::TensorReadOnly2D<float, false> next_layer_errors,
                       tensors::TensorReadOnly2D<float, false> next_layer_weights) {
   return compute_errors_impl(next_layer_errors, next_layer_weights);
 }
 
-tensors::TensorOwnerDevice2D<float>
+tensors::TensorOwner2D<float>
 Layer::compute_errors(tensors::TensorReadOnly2D<float, false> next_layer_errors,
                       tensors::TensorReadOnly2D<float, true> next_layer_weights) {
   return compute_errors_impl(next_layer_errors, next_layer_weights);
 }
 
-tensors::TensorOwnerDevice2D<float>
+tensors::TensorOwner2D<float>
 Layer::compute_errors(tensors::TensorReadOnly2D<float, true> next_layer_errors,
                       tensors::TensorReadOnly2D<float, false> next_layer_weights) {
   return compute_errors_impl(next_layer_errors, next_layer_weights);
 }
 
-tensors::TensorOwnerDevice2D<float>
+tensors::TensorOwner2D<float>
 Layer::compute_errors(tensors::TensorReadOnly2D<float, true> next_layer_errors,
                       tensors::TensorReadOnly2D<float, true> next_layer_weights) {
   return compute_errors_impl(next_layer_errors, next_layer_weights);
 }
 
-tensors::TensorOwnerDevice2D<float>
+tensors::TensorOwner2D<float>
 Layer::compute_errors(tensors::TensorReadOnly2D<float, false> backward_errors) {
   return compute_errors_impl(backward_errors);
 }
 
-tensors::TensorOwnerDevice2D<float>
+tensors::TensorOwner2D<float>
 Layer::compute_errors(tensors::TensorReadOnly2D<float, true> backward_errors) {
   return compute_errors_impl(backward_errors);
 }
