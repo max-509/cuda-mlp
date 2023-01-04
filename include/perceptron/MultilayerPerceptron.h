@@ -7,6 +7,9 @@
 #include "perceptron/activations/IActivation.h"
 #include "perceptron/tensors/Tensor2D.h"
 #include "perceptron/tensors/ops/MemoryOps.h"
+#include "perceptron/tensors/shufflers/IShuffler.h"
+#include "perceptron/tensors/shufflers/DummyShuffler.h"
+#include "perceptron/tensors/shufflers/BatchShuffler.h"
 #include "perceptron/common/utils/StreamUtils.h"
 
 #include <vector>
@@ -34,7 +37,7 @@ struct features_labels_pair_t {
 
 class MultilayerPerceptron {
 private:
-  static constexpr size_type STREAMS_BLOCK_SIZE = 32  ;
+  static constexpr size_type STREAMS_BLOCK_SIZE = 32;
 public:
 
   class MultilayerPerceptronBuilder : public std::enable_shared_from_this<MultilayerPerceptronBuilder> {
@@ -82,6 +85,11 @@ public:
   template<bool trans>
   tensors::TensorOwner2D<float>
   forward(tensors::TensorReadOnly2D<float, trans> inputs);
+
+  template<bool trans>
+  void
+  forward(tensors::TensorReadOnly2D<float, trans> inputs,
+          tensors::TensorWriteable2D<float> outputs);
 
   template<bool trans_inputs, bool trans_outputs, bool trans_labels>
   void
@@ -172,14 +180,29 @@ template<bool trans>
 tensors::TensorOwner2D<float>
 MultilayerPerceptron::forward(tensors::TensorReadOnly2D<float, trans> inputs) {
   m_layers.front().transform(inputs);
-  auto outputs = m_layers.front().active_neurons();
+  auto layer_outputs = m_layers.front().active_neurons();
 
   for (auto it = m_layers.begin() + 1; it != m_layers.end(); ++it) {
-    it->transform(outputs);
-    outputs = it->active_neurons();
+    it->transform(layer_outputs);
+    layer_outputs = it->active_neurons();
   }
 
-  return tensors::ops::copy(outputs);
+  return tensors::ops::copy(layer_outputs);
+}
+
+template<bool trans>
+void
+MultilayerPerceptron::forward(tensors::TensorReadOnly2D<float, trans> inputs,
+                              tensors::TensorWriteable2D<float> outputs) {
+  m_layers.front().transform(inputs);
+  auto layer_outputs = m_layers.front().active_neurons();
+
+  for (auto it = m_layers.begin() + 1; it != m_layers.end(); ++it) {
+    it->transform(layer_outputs);
+    layer_outputs = it->active_neurons();
+  }
+
+  tensors::ops::copy(layer_outputs, outputs);
 }
 
 template<bool trans_inputs, bool trans_outputs, bool trans_labels>
@@ -226,26 +249,31 @@ MultilayerPerceptron::fit(features_labels_pair_t<trans_train_feat, trans_train_l
     throw std::invalid_argument{"Number of samples in features must be equal to number of samples in labels"};
   }
   auto n_instances = train_features.get_nrows();
-  // TODO: If fullbatch, don't shuffle
+
+  size_type shuffled_buffer_nrows;
+  std::unique_ptr<tensors::shufflers::IShuffler> shuffler;
   if (m_batch_size.has_value()) {
-
+    auto batch_size = m_batch_size.value();
+    shuffler =
+        std::unique_ptr<tensors::shufflers::IShuffler>(new tensors::shufflers::BatchShuffler(n_instances,
+                                                                                             batch_size,
+                                                                                             m_seed));
+    shuffled_buffer_nrows = batch_size;
   } else {
-
+    shuffler = std::unique_ptr<tensors::shufflers::IShuffler>(new tensors::shufflers::DummyShuffler);
+    shuffled_buffer_nrows = n_instances;
   }
-  auto batch_size = m_batch_size.value_or(n_instances);
 
-  // TODO: Try to use CUDA graphs for kernels launching speedup
-
-  std::vector<size_type> batch_indices(batch_size);
-  std::vector<size_type> indices(n_instances);
-  std::iota(indices.begin(), indices.end(), 0);
-  std::mt19937 g(m_seed);
-
-  auto batch_train_features_owner = tensors::constructTensorOwnerDevice2D<float>(batch_size, train_features.get_ncols());
+  auto
+      batch_train_features_owner =
+      tensors::constructTensorOwnerDevice2D<float>(shuffled_buffer_nrows, train_features.get_ncols());
   auto batch_train_features_view = batch_train_features_owner.tensor_view();
-  auto batch_train_labels_owner = tensors::constructTensorOwnerDevice2D<float>(batch_size, train_labels.get_ncols());
+  auto batch_train_labels_owner =
+      tensors::constructTensorOwnerDevice2D<float>(shuffled_buffer_nrows, train_labels.get_ncols());
   auto batch_train_labels_view = batch_train_labels_owner.tensor_view();
-  auto streams_to_copy = utils::cu_create_streams(STREAMS_BLOCK_SIZE);
+  auto batch_outputs_owner =
+      tensors::constructTensorOwnerDevice2D<float>(shuffled_buffer_nrows, train_labels.get_ncols());
+  auto batch_outputs_view = batch_outputs_owner.tensor_view();
 
   std::vector<double> train_epoch_losses{};
   auto prev_loss = std::numeric_limits<double>::infinity();
@@ -253,31 +281,11 @@ MultilayerPerceptron::fit(features_labels_pair_t<trans_train_feat, trans_train_l
   auto curr_epoch = 0;
   size_type not_change_iters = 0;
   while (not_change_iters < m_max_not_change_iter && curr_epoch < m_n_epoch) {
-    std::shuffle(indices.begin(), indices.end(), g);
-    std::copy_n(indices.cbegin(), batch_size, batch_indices.begin());
+    shuffler->shuffle();
+    shuffler->get_shuffled(train_features, batch_train_features_view);
+    shuffler->get_shuffled(train_labels, batch_train_labels_view);
 
-    // TODO: Optimize shuffle
-    for (size_type stream_block_idx = 0; stream_block_idx < batch_size; stream_block_idx += STREAMS_BLOCK_SIZE) {
-      auto current_streams_block_size = std::min(STREAMS_BLOCK_SIZE, batch_size - stream_block_idx);
-      for (size_type stream_idx = 0; stream_idx < current_streams_block_size; ++stream_idx) {
-        auto row_idx = stream_block_idx + stream_idx;
-        tensors::ops::copy(train_features.get_row(batch_indices[row_idx]).to_2d(),
-                           batch_train_features_view.get_row(row_idx).to_2d());
-//                           *streams_to_copy[stream_idx]);
-
-        tensors::ops::copy(train_labels.get_row(batch_indices[row_idx]).to_2d(),
-                           batch_train_labels_view.get_row(row_idx).to_2d());
-//                           *streams_to_copy[stream_idx]);
-      }
-    }
-
-//    utils::cu_wait_streams(streams_to_copy);
-
-
-
-    // TODO: Reuse memory
-    auto batch_outputs_owner = forward(batch_train_features_view.to_read_only());
-    auto batch_outputs_view = batch_outputs_owner.tensor_view();
+    forward(batch_train_features_view.to_read_only(), batch_outputs_view);
     backward(batch_train_features_view.to_read_only(),
              batch_outputs_view.to_read_only(),
              batch_train_labels_view.to_read_only());

@@ -94,6 +94,22 @@ copy_or_transform(TensorReadOnly2D<T, trans_src> src,
                                     dst);
 }
 
+template<typename T, bool trans>
+void
+copy_rows_by_indices(TensorReadOnly2D<T, trans> src,
+                     TensorReadOnly1D<size_type> indices,
+                     TensorWriteable2D<T> dst,
+                     cudaStream_t stream = nullptr) {
+  is_valid_type<T>();
+
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
+  dim3 blocks(utils::block_size_by_threads(src.get_ncols(), threads.x),
+              utils::block_size_by_threads(src.get_nrows(), threads.y));
+
+  kernels::copy_rows_by_indices(blocks, threads, 0, stream,
+                                src, indices, dst);
+}
+
 template<typename T>
 void
 set(T value,

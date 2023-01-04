@@ -41,6 +41,8 @@ set(HDRS
         ${HDRS_PATH}/perceptron/tensors/ops/kernels/impl/ConstructOpsKernelsImpl.cuh
         ${HDRS_PATH}/perceptron/tensors/ops/Ops.h
         ${HDRS_PATH}/perceptron/tensors/shufflers/IShuffler.h
+        ${HDRS_PATH}/perceptron/tensors/shufflers/DummyShuffler.h
+        ${HDRS_PATH}/perceptron/tensors/shufflers/BatchShuffler.h
         ${HDRS_PATH}/perceptron/tensors/TensorHelper.h
         ${HDRS_PATH}/perceptron/tensors/Tensor1D.h
         ${HDRS_PATH}/perceptron/tensors/Tensor1DImpl.hpp
@@ -78,6 +80,8 @@ set(SRCS
         ${SRCS_PATH}/perceptron/tensors/ops/kernels/MathOpsKernels.cu
         ${SRCS_PATH}/perceptron/tensors/ops/kernels/MemoryOpsKernels.cu
         ${SRCS_PATH}/perceptron/tensors/shufflers/IShuffler.cu
+        ${SRCS_PATH}/perceptron/tensors/shufflers/DummyShuffler.cu
+        ${SRCS_PATH}/perceptron/tensors/shufflers/BatchShuffler.cu
 
         ${SRCS_PATH}/perceptron/common/utils/StreamUtils.cu
         ${SRCS_PATH}/perceptron/common/utils/CuBLASUtils.cu

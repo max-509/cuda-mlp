@@ -34,7 +34,7 @@ template<typename T, bool trans_src, typename Predicate>
 void
 copy_or_zero_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
                     TensorReadOnly2D<T, trans_src> src, Predicate &&predicate, TensorWriteable2D<T> dst) {
-  details::copy_or_zero_kernel_imlp<T, trans_src, Predicate><<<blocks, threads, shared_mem, stream>>>(
+  details::copy_or_zero_kernel_on_device<T, trans_src, Predicate><<<blocks, threads, shared_mem, stream>>>(
       predicate,
           src.get(), src.get_stride(),
           dst.get(), dst.get_stride(),
@@ -51,9 +51,29 @@ copy_or_transform_kernel(dim3 blocks,
                          Predicate &&predicate,
                          Transformer &&transformer,
                          TensorWriteable2D<T> dst) {
-  details::copy_or_transform_kernel_imlp<T, trans_src><<<blocks, threads, shared_mem, stream>>>(
+  details::copy_or_transform_kernel_on_device<T, trans_src><<<blocks, threads, shared_mem, stream>>>(
       predicate, transformer, src.get(), src.get_stride(), dst.get(), dst.get_stride(), dst.get_nrows(), dst.get_ncols());
 }
+
+void
+copy_rows_by_indices(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+                     TensorReadOnly2D<float, false> src, TensorReadOnly1D<size_type> indices,
+                     TensorWriteable2D<float> dst);
+
+void
+copy_rows_by_indices(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+                     TensorReadOnly2D<float, true> src, TensorReadOnly1D<size_type> indices,
+                     TensorWriteable2D<float> dst);
+
+void
+copy_rows_by_indices(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+                     TensorReadOnly2D<double, false> src, TensorReadOnly1D<size_type> indices,
+                     TensorWriteable2D<double> dst);
+
+void
+copy_rows_by_indices(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+                     TensorReadOnly2D<double, true> src, TensorReadOnly1D<size_type> indices,
+                     TensorWriteable2D<double> dst);
 
 void
 set_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,

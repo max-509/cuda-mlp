@@ -29,10 +29,10 @@ copy_kernel_on_device(const T *__restrict__ src, size_type src_pitch,
 template<typename T, bool trans_src, typename Predicate>
 __global__
 void
-copy_or_zero_kernel_imlp(Predicate predicate,
-                         const T *__restrict__ src, size_type src_pitch,
-                         T *__restrict__ dst, size_type dst_pitch,
-                         size_type nrows, size_type ncols) {
+copy_or_zero_kernel_on_device(Predicate predicate,
+                              const T *__restrict__ src, size_type src_pitch,
+                              T *__restrict__ dst, size_type dst_pitch,
+                              size_type nrows, size_type ncols) {
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -47,10 +47,10 @@ copy_or_zero_kernel_imlp(Predicate predicate,
 template<typename T, bool trans_src, typename Predicate, typename Transformer>
 __global__
 void
-copy_or_transform_kernel_imlp(Predicate predicate, Transformer transformer,
-                              const T *__restrict__ src, size_type src_pitch,
-                              T *__restrict__ dst, size_type dst_pitch,
-                              size_type nrows, size_type ncols) {
+copy_or_transform_kernel_on_device(Predicate predicate, Transformer transformer,
+                                   const T *__restrict__ src, size_type src_pitch,
+                                   T *__restrict__ dst, size_type dst_pitch,
+                                   size_type nrows, size_type ncols) {
   const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
   const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -59,6 +59,23 @@ copy_or_transform_kernel_imlp(Predicate predicate, Transformer transformer,
     auto src_elem = *tensors::get_elem<const T, trans_src>(src, y_idx, x_idx, src_pitch);
     auto pred_val = static_cast<T>(predicate(src_elem));
     *dst_elem = pred_val * src_elem + (static_cast<T>(1.0) - pred_val) * transformer(src_elem);
+  }
+}
+
+template<typename T, bool trans>
+__global__
+void
+copy_rows_by_indices_kernel_on_device(const T *__restrict__ src, size_type src_pitch,
+                                      const size_type *__restrict__ indices, size_type indices_pitch,
+                                      T *__restrict__ dst, size_type dst_pitch,
+                                      size_type nrows, size_type ncols) {
+  const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
+  const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (y_idx < nrows && x_idx < ncols) {
+    auto row_index = *tensors::get_elem(indices, y_idx, indices_pitch);
+    *tensors::get_elem(dst, y_idx, x_idx, dst_pitch) =
+        *tensors::get_elem<const T, trans>(src, row_index, x_idx, src_pitch);
   }
 }
 

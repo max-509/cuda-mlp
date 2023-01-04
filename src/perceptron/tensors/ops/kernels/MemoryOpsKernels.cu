@@ -11,7 +11,9 @@ template<typename T, bool trans>
 void
 copy_kernel_impl(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
                  TensorReadOnly2D<T, trans> src, TensorWriteable2D<T> dst) {
-  details::copy_kernel_on_device<T, trans><<<blocks, threads, shared_mem, stream>>>(src.get(), src.get_stride(), dst.get(), dst.get_stride(), dst.get_nrows(), dst.get_ncols());
+  details::copy_kernel_on_device<T,
+  trans
+      ><<<blocks, threads, shared_mem, stream>>>(src.get(), src.get_stride(), dst.get(), dst.get_stride(), dst.get_nrows(), dst.get_ncols());
 }
 
 void
@@ -36,6 +38,44 @@ void
 copy_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
             TensorReadOnly2D<double, true> src, TensorWriteable2D<double> dst) {
   copy_kernel_impl(blocks, threads, shared_mem, stream, src, dst);
+}
+
+template<typename T, bool trans>
+void
+copy_rows_by_indices_impl(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+                          TensorReadOnly2D<T, trans> src, TensorReadOnly1D<size_type> indices,
+                          TensorWriteable2D<T> dst) {
+  details::copy_rows_by_indices_kernel_on_device<T, trans><<<blocks, threads, shared_mem, stream>>>(
+      src.get(), src.get_stride(), indices.get(), indices.get_stride(), dst.get(), dst.get_stride(),
+          dst.get_nrows(), dst.get_ncols());
+}
+
+void
+copy_rows_by_indices(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+                     TensorReadOnly2D<float, false> src, TensorReadOnly1D<size_type> indices,
+                     TensorWriteable2D<float> dst) {
+  copy_rows_by_indices_impl(blocks, threads, shared_mem, stream, src, indices, dst);
+}
+
+void
+copy_rows_by_indices(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+                     TensorReadOnly2D<float, true> src, TensorReadOnly1D<size_type> indices,
+                     TensorWriteable2D<float> dst) {
+  copy_rows_by_indices_impl(blocks, threads, shared_mem, stream, src, indices, dst);
+}
+
+void
+copy_rows_by_indices(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+                     TensorReadOnly2D<double, false> src, TensorReadOnly1D<size_type> indices,
+                     TensorWriteable2D<double> dst) {
+  copy_rows_by_indices_impl(blocks, threads, shared_mem, stream, src, indices, dst);
+}
+
+void
+copy_rows_by_indices(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+                     TensorReadOnly2D<double, true> src, TensorReadOnly1D<size_type> indices,
+                     TensorWriteable2D<double> dst) {
+  copy_rows_by_indices_impl(blocks, threads, shared_mem, stream, src, indices, dst);
 }
 
 template<typename T>
