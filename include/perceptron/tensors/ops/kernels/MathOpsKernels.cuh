@@ -38,6 +38,22 @@ scal_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream
             double alpha, TensorWriteable2D<double> x);
 
 void
+scal_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+            float alpha, TensorReadOnly2D<float, false> src, TensorWriteable2D<float> dst);
+
+void
+scal_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+            float alpha, TensorReadOnly2D<float, true> src, TensorWriteable2D<float> dst);
+
+void
+scal_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+            double alpha, TensorReadOnly2D<double, false> src, TensorWriteable2D<double> dst);
+
+void
+scal_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+            double alpha, TensorReadOnly2D<double, true> src, TensorWriteable2D<double> dst);
+
+void
 reverse_scal_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
                     float alpha, TensorWriteable2D<float> x);
 
@@ -167,6 +183,54 @@ exp_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
 
 void
 exp_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorWriteable2D<double> dst);
+
+void
+cos_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorReadOnly2D<float, false> src, TensorWriteable2D<float> dst);
+
+void
+cos_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorReadOnly2D<float, true> src, TensorWriteable2D<float> dst);
+
+void
+cos_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorReadOnly2D<double, false> src, TensorWriteable2D<double> dst);
+
+void
+cos_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorReadOnly2D<double, true> src, TensorWriteable2D<double> dst);
+
+void
+cos_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorWriteable2D<float> dst);
+
+void
+cos_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorWriteable2D<double> dst);
+
+void
+sin_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorReadOnly2D<float, false> src, TensorWriteable2D<float> dst);
+
+void
+sin_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorReadOnly2D<float, true> src, TensorWriteable2D<float> dst);
+
+void
+sin_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorReadOnly2D<double, false> src, TensorWriteable2D<double> dst);
+
+void
+sin_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorReadOnly2D<double, true> src, TensorWriteable2D<double> dst);
+
+void
+sin_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorWriteable2D<float> dst);
+
+void
+sin_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
            TensorWriteable2D<double> dst);
 
 void

@@ -30,9 +30,26 @@ struct mlp_history_t {
 };
 
 template<bool trans_features, bool trans_labels>
-struct features_labels_pair_t {
+struct features2D_labels2D_pair_t {
   tensors::TensorReadOnly2D<float, trans_features> features;
   tensors::TensorReadOnly2D<float, trans_labels> labels;
+};
+
+template<bool trans_features>
+struct features2D_labels1D_pair_t {
+  tensors::TensorReadOnly2D<float, trans_features> features;
+  tensors::TensorReadOnly1D<float> labels;
+};
+
+template<bool trans_labels>
+struct features1D_labels2D_pair_t {
+  tensors::TensorReadOnly1D<float> features;
+  tensors::TensorReadOnly2D<float, trans_labels> labels;
+};
+
+struct features1D_labels1D_pair_t {
+  tensors::TensorReadOnly1D<float> features;
+  tensors::TensorReadOnly1D<float> labels;
 };
 
 class MultilayerPerceptron {
@@ -97,9 +114,25 @@ public:
            tensors::TensorReadOnly2D<float, trans_outputs> outputs,
            tensors::TensorReadOnly2D<float, trans_labels> labels);
 
+  template<bool trans_train_feat, bool trans_train_labels, bool trans_val_feat, bool trans_val_labels>
+  mlp_history_t
+  fit(features2D_labels2D_pair_t<trans_train_feat, trans_train_labels> train,
+      features2D_labels2D_pair_t<trans_val_feat, trans_val_labels> val);
+
   template<bool trans_train_feat, bool trans_train_labels>
   mlp_history_t
-  fit(features_labels_pair_t<trans_train_feat, trans_train_labels> train);
+  fit(features2D_labels2D_pair_t<trans_train_feat, trans_train_labels> train);
+
+  template<bool trans_train_feat>
+  mlp_history_t
+  fit(features2D_labels1D_pair_t<trans_train_feat> train);
+
+  template<bool trans_train_labels>
+  mlp_history_t
+  fit(features1D_labels2D_pair_t<trans_train_labels> train);
+
+  mlp_history_t
+  fit(features1D_labels1D_pair_t train);
 
   template<bool trans>
   tensors::TensorOwner2D<float>
@@ -127,6 +160,11 @@ private:
                        size_type n_epoch,
                        size_type max_not_change_iter,
                        size_type seed);
+
+  template<bool trans_train_feat, bool trans_train_labels, bool trans_val_feat, bool trans_val_labels>
+  mlp_history_t
+  fit_impl(features2D_labels2D_pair_t<trans_train_feat, trans_train_labels> train,
+           std::optional<features2D_labels2D_pair_t<trans_val_feat, trans_val_labels>> val);
 };
 
 template<typename OptimizerDescriber>
@@ -240,9 +278,35 @@ MultilayerPerceptron::backward(tensors::TensorReadOnly2D<float, trans_inputs> in
   m_layers.front().update_gradients(inputs, curr_backward_errors_view.to_read_only());
 }
 
+template<bool trans_train_feat, bool trans_train_labels, bool trans_val_feat, bool trans_val_labels>
+mlp_history_t
+MultilayerPerceptron::fit(features2D_labels2D_pair_t<trans_train_feat, trans_train_labels> train,
+                          features2D_labels2D_pair_t<trans_val_feat, trans_val_labels> val) {
+  return fit_impl(train, std::make_optional(val));
+}
+
 template<bool trans_train_feat, bool trans_train_labels>
 mlp_history_t
-MultilayerPerceptron::fit(features_labels_pair_t<trans_train_feat, trans_train_labels> train) {
+MultilayerPerceptron::fit(features2D_labels2D_pair_t<trans_train_feat, trans_train_labels> train) {
+  return fit_impl<trans_train_feat, trans_train_labels, false, false>(train, std::nullopt);
+}
+
+template<bool trans_train_feat>
+mlp_history_t
+MultilayerPerceptron::fit(features2D_labels1D_pair_t<trans_train_feat> train) {
+  return fit(features2D_labels2D_pair_t<trans_train_feat, false>{train.features, train.labels.to_2d()});
+}
+
+template<bool trans_train_labels>
+mlp_history_t
+MultilayerPerceptron::fit(features1D_labels2D_pair_t<trans_train_labels> train) {
+  return fit(features2D_labels2D_pair_t<false, trans_train_labels>{train.features.to_2d(), train.labels});
+}
+
+template<bool trans_train_feat, bool trans_train_labels, bool trans_val_feat, bool trans_val_labels>
+mlp_history_t
+MultilayerPerceptron::fit_impl(features2D_labels2D_pair_t<trans_train_feat, trans_train_labels> train,
+                               std::optional<features2D_labels2D_pair_t<trans_val_feat, trans_val_labels>> val) {
   auto [train_features, train_labels] = train;
 
   if (train_features.get_nrows() != train_labels.get_nrows()) {
@@ -254,10 +318,9 @@ MultilayerPerceptron::fit(features_labels_pair_t<trans_train_feat, trans_train_l
   std::unique_ptr<tensors::shufflers::IShuffler> shuffler;
   if (m_batch_size.has_value()) {
     auto batch_size = m_batch_size.value();
-    shuffler =
-        std::unique_ptr<tensors::shufflers::IShuffler>(new tensors::shufflers::BatchShuffler(n_instances,
-                                                                                             batch_size,
-                                                                                             m_seed));
+    shuffler = std::unique_ptr<tensors::shufflers::IShuffler>(new tensors::shufflers::BatchShuffler(n_instances,
+                                                                                                    batch_size,
+                                                                                                    m_seed));
     shuffled_buffer_nrows = batch_size;
   } else {
     shuffler = std::unique_ptr<tensors::shufflers::IShuffler>(new tensors::shufflers::DummyShuffler);
@@ -274,8 +337,19 @@ MultilayerPerceptron::fit(features_labels_pair_t<trans_train_feat, trans_train_l
   auto batch_outputs_owner =
       tensors::constructTensorOwnerDevice2D<float>(shuffled_buffer_nrows, train_labels.get_ncols());
   auto batch_outputs_view = batch_outputs_owner.tensor_view();
+  std::optional<tensors::TensorOwner2D<float>> val_outputs_owner{std::nullopt};
+  if (val.has_value()) {
+    auto [val_features, val_labels] = val.value();
+    val_outputs_owner =
+        std::make_optional(tensors::constructTensorOwnerDevice2D<float>(val_labels.get_nrows(),
+                                                                        val_labels.get_ncols()));
+  }
 
   std::vector<double> train_epoch_losses{};
+  std::optional<std::vector<double>> val_epoch_losses{std::nullopt};
+  if (val.has_value()) {
+    val_epoch_losses = std::make_optional(std::vector<double>{});
+  }
   auto prev_loss = std::numeric_limits<double>::infinity();
 
   auto curr_epoch = 0;
@@ -294,11 +368,25 @@ MultilayerPerceptron::fit(features_labels_pair_t<trans_train_feat, trans_train_l
                                                  batch_train_labels_view.to_read_only()));
 
     // TODO: Val test
+    if (val.has_value()) {
+      auto [val_features, val_labels] = val.value();
+      auto val_outputs = val_outputs_owner.value().tensor_view();
+      forward(val_features, val_outputs);
+      auto curr_loss = m_loss->compute(val_outputs.to_read_only(),
+                                       val_labels);
+      val_epoch_losses.value().push_back(curr_loss);
+
+      if (std::abs(curr_loss - prev_loss) < m_etol) {
+        ++not_change_iters;
+      }
+
+      prev_loss = curr_loss;
+    }
 
     ++curr_epoch;
   }
 
-  return mlp_history_t{train_epoch_losses};
+  return mlp_history_t{train_epoch_losses, val_epoch_losses};
 }
 
 template<bool trans>

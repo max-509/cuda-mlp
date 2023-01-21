@@ -28,7 +28,9 @@ int main() {
 
   auto labels = tensors::ops::scal(2.0f * static_cast<float>(M_PI),
                                    features.tensor_view().to_read_only().to_2d());
-  tensors::ops::cos(labels.tensor_view());
+  tensors::ops::sin(labels.tensor_view());
+  tensors::ops::element_wise_mul(features.tensor_view().to_read_only().to_2d(),
+                                 labels.tensor_view());
 
   float train_test_fraction = 0.7;
   auto train_size = static_cast<size_type>(static_cast<double>(dataset_size) * train_test_fraction);
@@ -46,19 +48,8 @@ int main() {
 
   test_features.to_host();
   test_labels.to_host();
-  tensor_to_csv(test_features.tensor_view().to_read_only(), "cos_2pi_test_features.csv", {"f1"});
-  tensor_to_csv(test_labels.tensor_view().to_read_only(), "cos_2pi_test_labels.csv", {"label"});
-
-//  auto transformed_view = transformed_owner.tensor_view();
-//  transformed_owner.to_host();
-//  std::cout << "history" << std::endl;
-//  for (auto &&l : history) {
-//    std::cout << l << std::endl;
-//  }
-//  std::cout << "values" << std::endl;
-//  for (size_type i = 0; i < transformed_view.get_nrows(); ++i) {
-//    std::cout << transformed_view(i, 0) << std::endl;
-//  }
+  tensor_to_csv(test_features.tensor_view().to_read_only(), "x_sin_2pi_test_features.csv", {"f1"});
+  tensor_to_csv(test_labels.tensor_view().to_read_only(), "x_sin_2pi_test_labels.csv", {"label"});
 
   return 0;
 }

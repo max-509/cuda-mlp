@@ -12,9 +12,10 @@ namespace shufflers {
 class DummyShuffler final : public IShuffler {
 public:
   using IShuffler::get_shuffled;
+  using IShuffler::shuffle;
 
   void
-  shuffle() override;
+  shuffle(cudaStream_t stream) override;
 
   TensorOwner2D<float>
   get_shuffled(TensorReadOnly2D<float, false> tensor_to_shuffle,

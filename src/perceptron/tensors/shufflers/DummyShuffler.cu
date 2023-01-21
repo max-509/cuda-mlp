@@ -4,7 +4,7 @@ namespace perceptron {
 namespace tensors {
 namespace shufflers {
 
-void DummyShuffler::shuffle() {}
+void DummyShuffler::shuffle(cudaStream_t stream) {}
 
 TensorOwner2D<float>
 DummyShuffler::get_shuffled(TensorReadOnly2D<float, false> tensor_to_shuffle,

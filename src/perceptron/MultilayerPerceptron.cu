@@ -38,6 +38,11 @@ MultilayerPerceptron::builder() {
   return std::make_shared<MultilayerPerceptronBuilder>();
 }
 
+mlp_history_t
+MultilayerPerceptron::fit(features1D_labels1D_pair_t train) {
+  return fit(features2D_labels2D_pair_t<false, false>{train.features.to_2d(), train.labels.to_2d()});
+}
+
 tensors::TensorOwner2D<float>
 MultilayerPerceptron::transform(tensors::TensorReadOnly1D<float> inputs) {
   return transform(inputs.to_2d());

@@ -55,6 +55,23 @@ scal_kernel_on_device(T alpha, T *__restrict__ dst, size_type pitch, size_type n
   }
 }
 
+template<typename T, bool trans>
+__global__
+void
+scal_kernel_on_device(T alpha,
+                      const T *__restrict__ src, size_type src_pitch,
+                      T *__restrict__ dst, size_type dst_pitch,
+                      size_type nrows, size_type ncols) {
+  const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
+  const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (y_idx < nrows && x_idx < ncols) {
+    auto dst_elem = tensors::get_elem(dst, y_idx, x_idx, dst_pitch);
+    auto src_elem = *tensors::get_elem<const T, trans>(src, y_idx, x_idx, src_pitch);
+    *dst_elem = alpha * src_elem;
+  }
+}
+
 template<typename T>
 __global__
 void
@@ -213,6 +230,62 @@ exp_kernel_on_device(T *__restrict__ dst, size_type pitch, size_type nrows, size
   if (y_idx < nrows && x_idx < ncols) {
     auto elem_ptr = tensors::get_elem(dst, y_idx, x_idx, pitch);
     *elem_ptr = functions::exp(*elem_ptr);
+  }
+}
+
+template<typename T, bool trans>
+__global__
+void
+cos_kernel_on_device(const T *__restrict__ src, size_type src_pitch,
+                     T *__restrict__ dst, size_type dst_pitch,
+                     size_type nrows, size_type ncols) {
+  const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
+  const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (y_idx < nrows && x_idx < ncols) {
+    *tensors::get_elem(dst, nrows, ncols, dst_pitch) =
+        functions::cos(*tensors::get_elem<const T, trans>(src, y_idx, x_idx, src_pitch));
+  }
+}
+
+template<typename T>
+__global__
+void
+cos_kernel_on_device(T *__restrict__ dst, size_type pitch, size_type nrows, size_type ncols) {
+  const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
+  const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (y_idx < nrows && x_idx < ncols) {
+    auto elem_ptr = tensors::get_elem(dst, y_idx, x_idx, pitch);
+    *elem_ptr = functions::cos(*elem_ptr);
+  }
+}
+
+template<typename T, bool trans>
+__global__
+void
+sin_kernel_on_device(const T *__restrict__ src, size_type src_pitch,
+                     T *__restrict__ dst, size_type dst_pitch,
+                     size_type nrows, size_type ncols) {
+  const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
+  const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (y_idx < nrows && x_idx < ncols) {
+    *tensors::get_elem(dst, nrows, ncols, dst_pitch) =
+        functions::sin(*tensors::get_elem<const T, trans>(src, y_idx, x_idx, src_pitch));
+  }
+}
+
+template<typename T>
+__global__
+void
+sin_kernel_on_device(T *__restrict__ dst, size_type pitch, size_type nrows, size_type ncols) {
+  const auto y_idx = blockIdx.y * blockDim.y + threadIdx.y;
+  const auto x_idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (y_idx < nrows && x_idx < ncols) {
+    auto elem_ptr = tensors::get_elem(dst, y_idx, x_idx, pitch);
+    *elem_ptr = functions::sin(*elem_ptr);
   }
 }
 

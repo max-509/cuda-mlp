@@ -38,14 +38,14 @@ gemm(T alpha,
   auto k = static_cast<int>(A.get_ncols());
 
   if (k != B.get_nrows()) {
-    std::stringstream stream;
-    stream << "Bad sizes for A@B matrices multiplication: " << A.shape_repr() << " and " << B.shape_repr();
-    throw std::invalid_argument{stream.str()};
+    std::stringstream strstream;
+    strstream << "Bad sizes for A@B matrices multiplication: " << A.shape_repr() << " and " << B.shape_repr();
+    throw std::invalid_argument{strstream.str()};
   }
   if (m != C.get_nrows() && n != C.get_ncols()) {
-    std::stringstream stream;
-    stream << "Bad C matrix size " << C.shape_repr() << " for A@B result (" << m << ", " << k << ")";
-    throw std::invalid_argument{stream.str()};
+    std::stringstream strstream;
+    strstream << "Bad C matrix size " << C.shape_repr() << " for A@B result (" << m << ", " << k << ")";
+    throw std::invalid_argument{strstream.str()};
   }
 
   if constexpr (std::is_same_v<T, float>) {
@@ -88,14 +88,14 @@ geam(TensorReadOnly2D<T, transa> A,
   auto m = static_cast<int>(A.get_nrows());
   auto n = static_cast<int>(A.get_ncols());
   if (m != B.get_nrows() || n != B.get_ncols()) {
-    std::stringstream stream;
-    stream << "Bad sizes for A+B summation: " << A.shape_repr() << " and " << B.shape_repr();
-    throw std::invalid_argument{stream.str()};
+    std::stringstream strstream;
+    strstream << "Bad sizes for A+B summation: " << A.shape_repr() << " and " << B.shape_repr();
+    throw std::invalid_argument{strstream.str()};
   }
   if (m != C.get_nrows() || n != C.get_ncols()) {
-    std::stringstream stream;
-    stream << "Bad C matrix size " << C.shape_repr() << " for A+B result: (" << n << ", " << m << ")";
-    throw std::invalid_argument{stream.str()};
+    std::stringstream strstream;
+    strstream << "Bad C matrix size " << C.shape_repr() << " for A+B result: (" << n << ", " << m << ")";
+    throw std::invalid_argument{strstream.str()};
   }
 
   if constexpr (std::is_same_v<T, float>) {
@@ -143,9 +143,9 @@ gemv(T alpha,
   auto m = static_cast<int>(A.get_nrows());
   auto n = static_cast<int>(A.get_ncols());
   if (n != x.get_size()) {
-    std::stringstream stream;
-    stream << "Bad size for A@x multiplication operation: " << A.shape_repr() << " and " << x.get_size();
-    throw std::invalid_argument{stream.str()};
+    std::stringstream strstream;
+    strstream << "Bad size for A@x multiplication operation: " << A.shape_repr() << " and " << x.get_size();
+    throw std::invalid_argument{strstream.str()};
   }
 
   if constexpr (std::is_same_v<T, float>) {
@@ -228,6 +228,26 @@ scal(T alpha, TensorWriteable2D<T> x, cudaStream_t stream = nullptr) {
               utils::block_size_by_threads(x.get_nrows(), threads.y));
 
   kernels::scal_kernel(blocks, threads, 0, stream, alpha, x);
+}
+
+template<typename T, bool trans>
+void
+scal(T alpha, TensorReadOnly2D<T, trans> src, TensorWriteable2D<T> dst, cudaStream_t stream = nullptr) {
+  is_valid_type<T>();
+
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
+  dim3 blocks(utils::block_size_by_threads(src.get_ncols(), threads.x),
+              utils::block_size_by_threads(src.get_nrows(), threads.y));
+
+  kernels::scal_kernel(blocks, threads, 0, stream, alpha, src, dst);
+}
+
+template<typename T, bool trans>
+TensorOwner2D<T>
+scal(T alpha, TensorReadOnly2D<T, trans> src, cudaStream_t stream = nullptr) {
+  auto dst_owner = constructTensorOwnerDevice2D<T>(src.get_nrows(), src.get_ncols(), DEFAULT_2D_STRIDE, stream);
+  scal(alpha, src, dst_owner.tensor_view(), stream);
+  return dst_owner;
 }
 
 template<typename T>
@@ -367,6 +387,70 @@ exp(TensorWriteable2D<T> dst, cudaStream_t stream = nullptr) {
               utils::block_size_by_threads(dst.get_nrows(), threads.y));
 
   kernels::exp_kernel(blocks, threads, 0, stream, dst);
+}
+
+template<typename T, bool trans_src>
+void
+cos(TensorReadOnly2D<T, trans_src> src, TensorWriteable2D<T> dst, cudaStream_t stream = nullptr) {
+  is_valid_type<T>();
+
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
+  dim3 blocks(utils::block_size_by_threads(src.get_ncols(), threads.x),
+              utils::block_size_by_threads(src.get_nrows(), threads.y));
+
+  kernels::cos_kernel(blocks, threads, 0, stream, src, dst);
+}
+
+template<typename T, bool trans_src>
+TensorOwner2D<T>
+cos(TensorReadOnly2D<T, trans_src> src, cudaStream_t stream = nullptr) {
+  auto output_owner = constructTensorOwnerDevice2D<T>(src.get_y_dim(), src.get_x_dim(), DEFAULT_2D_STRIDE, stream);
+  cos(src, output_owner.tensor_view(), stream);
+  return output_owner;
+}
+
+template<typename T>
+void
+cos(TensorWriteable2D<T> dst, cudaStream_t stream = nullptr) {
+  is_valid_type<T>();
+
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
+  dim3 blocks(utils::block_size_by_threads(dst.get_ncols(), threads.x),
+              utils::block_size_by_threads(dst.get_nrows(), threads.y));
+
+  kernels::cos_kernel(blocks, threads, 0, stream, dst);
+}
+
+template<typename T, bool trans_src>
+void
+sin(TensorReadOnly2D<T, trans_src> src, TensorWriteable2D<T> dst, cudaStream_t stream = nullptr) {
+  is_valid_type<T>();
+
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
+  dim3 blocks(utils::block_size_by_threads(src.get_ncols(), threads.x),
+              utils::block_size_by_threads(src.get_nrows(), threads.y));
+
+  kernels::sin_kernel(blocks, threads, 0, stream, src, dst);
+}
+
+template<typename T, bool trans_src>
+TensorOwner2D<T>
+sin(TensorReadOnly2D<T, trans_src> src, cudaStream_t stream = nullptr) {
+  auto output_owner = constructTensorOwnerDevice2D<T>(src.get_y_dim(), src.get_x_dim(), DEFAULT_2D_STRIDE, stream);
+  sin(src, output_owner.tensor_view(), stream);
+  return output_owner;
+}
+
+template<typename T>
+void
+sin(TensorWriteable2D<T> dst, cudaStream_t stream = nullptr) {
+  is_valid_type<T>();
+
+  dim3 threads(utils::DEFAULT_BLOCK_SIZE_2D, utils::DEFAULT_BLOCK_SIZE_2D);
+  dim3 blocks(utils::block_size_by_threads(dst.get_ncols(), threads.x),
+              utils::block_size_by_threads(dst.get_nrows(), threads.y));
+
+  kernels::sin_kernel(blocks, threads, 0, stream, dst);
 }
 
 template<typename T, bool trans_src>

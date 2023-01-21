@@ -102,6 +102,38 @@ scal_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream
   scal_kernel_impl(blocks, threads, shared_mem, stream, alpha, x);
 }
 
+template<typename T, bool trans>
+void
+scal_kernel_impl(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+                 T alpha, TensorReadOnly2D<T, trans> src, TensorWriteable2D<T> dst) {
+  details::scal_kernel_on_device<T, trans><<<blocks, threads, shared_mem, stream>>>(
+      alpha, src.get(), src.get_stride(),dst.get(),dst.get_stride(), src.get_nrows(), src.get_ncols());
+}
+
+void
+scal_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+            float alpha, TensorReadOnly2D<float, false> src, TensorWriteable2D<float> dst) {
+  scal_kernel_impl(blocks, threads, shared_mem, stream, alpha, src, dst);
+}
+
+void
+scal_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+            float alpha, TensorReadOnly2D<float, true> src, TensorWriteable2D<float> dst) {
+  scal_kernel_impl(blocks, threads, shared_mem, stream, alpha, src, dst);
+}
+
+void
+scal_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+            double alpha, TensorReadOnly2D<double, false> src, TensorWriteable2D<double> dst) {
+  scal_kernel_impl(blocks, threads, shared_mem, stream, alpha, src, dst);
+}
+
+void
+scal_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+            double alpha, TensorReadOnly2D<double, true> src, TensorWriteable2D<double> dst) {
+  scal_kernel_impl(blocks, threads, shared_mem, stream, alpha, src, dst);
+}
+
 template<typename T>
 void
 reverse_scal_kernel_impl(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
@@ -357,6 +389,110 @@ void
 exp_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
            TensorWriteable2D<double> dst) {
   exp_kernel_impl(blocks, threads, shared_mem, stream, dst);
+}
+
+template<typename T, bool trans>
+void
+cos_kernel_impl(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+                TensorReadOnly2D<T, trans> src, TensorWriteable2D<T> dst) {
+  details::cos_kernel_on_device<T, trans><<<blocks, threads, shared_mem, stream>>>(
+      src.get(), src.get_stride(), dst.get(), dst.get_stride(), dst.get_nrows(), dst.get_ncols());
+}
+
+void
+cos_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorReadOnly2D<float, false> src, TensorWriteable2D<float> dst) {
+  cos_kernel_impl(blocks, threads, shared_mem, stream, src, dst);
+}
+
+void
+cos_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorReadOnly2D<float, true> src, TensorWriteable2D<float> dst) {
+  cos_kernel_impl(blocks, threads, shared_mem, stream, src, dst);
+}
+
+void
+cos_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorReadOnly2D<double, false> src, TensorWriteable2D<double> dst) {
+  cos_kernel_impl(blocks, threads, shared_mem, stream, src, dst);
+}
+
+void
+cos_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorReadOnly2D<double, true> src, TensorWriteable2D<double> dst) {
+  cos_kernel_impl(blocks, threads, shared_mem, stream, src, dst);
+}
+
+template<typename T>
+void
+cos_kernel_impl(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+                TensorWriteable2D<T> dst) {
+  details::cos_kernel_on_device<<<blocks, threads, shared_mem, stream>>>(
+      dst.get(), dst.get_stride(), dst.get_nrows(), dst.get_ncols());
+}
+
+void
+cos_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorWriteable2D<float> dst) {
+  cos_kernel_impl(blocks, threads, shared_mem, stream, dst);
+}
+
+void
+cos_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorWriteable2D<double> dst) {
+  cos_kernel_impl(blocks, threads, shared_mem, stream, dst);
+}
+
+template<typename T, bool trans>
+void
+sin_kernel_impl(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+                TensorReadOnly2D<T, trans> src, TensorWriteable2D<T> dst) {
+  details::sin_kernel_on_device<T, trans><<<blocks, threads, shared_mem, stream>>>(
+      src.get(), src.get_stride(), dst.get(), dst.get_stride(), dst.get_nrows(), dst.get_ncols());
+}
+
+void
+sin_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorReadOnly2D<float, false> src, TensorWriteable2D<float> dst) {
+  sin_kernel_impl(blocks, threads, shared_mem, stream, src, dst);
+}
+
+void
+sin_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorReadOnly2D<float, true> src, TensorWriteable2D<float> dst) {
+  sin_kernel_impl(blocks, threads, shared_mem, stream, src, dst);
+}
+
+void
+sin_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorReadOnly2D<double, false> src, TensorWriteable2D<double> dst) {
+  sin_kernel_impl(blocks, threads, shared_mem, stream, src, dst);
+}
+
+void
+sin_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorReadOnly2D<double, true> src, TensorWriteable2D<double> dst) {
+  sin_kernel_impl(blocks, threads, shared_mem, stream, src, dst);
+}
+
+template<typename T>
+void
+sin_kernel_impl(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+                TensorWriteable2D<T> dst) {
+  details::sin_kernel_on_device<<<blocks, threads, shared_mem, stream>>>(
+      dst.get(), dst.get_stride(), dst.get_nrows(), dst.get_ncols());
+}
+
+void
+sin_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorWriteable2D<float> dst) {
+  sin_kernel_impl(blocks, threads, shared_mem, stream, dst);
+}
+
+void
+sin_kernel(dim3 blocks, dim3 threads, size_type shared_mem, cudaStream_t stream,
+           TensorWriteable2D<double> dst) {
+  sin_kernel_impl(blocks, threads, shared_mem, stream, dst);
 }
 
 template<typename T, bool trans>

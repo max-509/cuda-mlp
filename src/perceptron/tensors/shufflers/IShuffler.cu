@@ -4,6 +4,11 @@ namespace perceptron {
 namespace tensors {
 namespace shufflers {
 
+void
+IShuffler::shuffle() {
+  shuffle(nullptr);
+}
+
 TensorOwner2D<float>
 IShuffler::get_shuffled(TensorReadOnly2D<float, false> tensor_to_shuffle) {
   return get_shuffled(tensor_to_shuffle, nullptr);

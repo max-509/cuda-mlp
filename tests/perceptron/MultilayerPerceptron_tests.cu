@@ -31,8 +31,8 @@ TEST_CASE("Create MLP", "[perceptron]") {
   auto train_labels = tensors::ops::element_wise_mul(train_features.tensor_view().to_read_only().to_2d(),
                                                      train_features.tensor_view().to_read_only().to_2d());
 
-  auto history = mlp.fit(features_labels_pair_t<false, false>{train_features.tensor_view().to_read_only().to_2d(),
-                                                              train_labels.tensor_view().to_read_only()}).train_history;
+  auto history = mlp.fit(features2D_labels2D_pair_t<false, false>{train_features.tensor_view().to_read_only().to_2d(),
+                                                                  train_labels.tensor_view().to_read_only()}).train_history;
   auto transformed_owner = mlp.transform(train_features.tensor_view().to_read_only());
   transformed_owner.to_host();
   auto transformed_view = transformed_owner.tensor_view();

@@ -43,6 +43,28 @@ pow(T b, T e) {
 }
 
 template<typename T>
+DEVICE_CALLABLE
+T
+cos(T v) {
+  if constexpr (std::is_same_v<T, float>) {
+    return ::cosf(v);
+  } else {
+    return ::cos(v);
+  }
+}
+
+template<typename T>
+DEVICE_CALLABLE
+T
+sin(T v) {
+  if constexpr (std::is_same_v<T, float>) {
+    return ::sinf(v);
+  } else {
+    return ::sin(v);
+  }
+}
+
+template<typename T>
 __device__
 T
 uniform(curandState_t *state, T a, T b) {

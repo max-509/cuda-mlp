@@ -13,7 +13,10 @@ class IShuffler {
 public:
 
   virtual void
-  shuffle() = 0;
+  shuffle(cudaStream_t stream) = 0;
+
+  void
+  shuffle();
 
   virtual TensorOwner2D<float>
   get_shuffled(TensorReadOnly2D<float, false> tensor_to_shuffle,
