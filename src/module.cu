@@ -1,5 +1,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 
 #include "perceptron/MultilayerPerceptron.h"
 
@@ -91,6 +92,9 @@ PYBIND11_MODULE(cuda_mlp, m) {
   m.doc() = "Just another implementation of multilayer perceptron, but under CUDA architecture";
 
   /** Tensors **/
+
+  py::module_::create_extension_module("tensors", "Functions for tensors creating", m)
+    .def("")
 
   /** Tensors **/
 
