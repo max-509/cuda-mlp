@@ -1,15 +1,14 @@
-#ifndef PERCEPTRON_ACTIVATIONS_SIGMOIDACTIVATION_H
-#define PERCEPTRON_ACTIVATIONS_SIGMOIDACTIVATION_H
+#ifndef PERCEPTRON_ACTIVATIONS_SOFTMAXACTIVATION_H
+#define PERCEPTRON_ACTIVATIONS_SOFTMAXACTIVATION_H
 
 #include "perceptron/common/Common.h"
 #include "perceptron/activations/IActivation.h"
-#include "perceptron/tensors/ops/MathOps.h"
-#include "perceptron/tensors/ops/MemoryOps.h"
+#include "perceptron/tensors/ops/Ops.h"
 
 namespace perceptron {
 namespace activations {
 
-class SigmoidActivation : public IActivation {
+class SoftMaxActivation : public IActivation {
 public:
   using IActivation::compute;
 
@@ -41,24 +40,19 @@ private:
 
 template<typename T, bool trans>
 void
-SigmoidActivation::compute_impl(tensors::TensorReadOnly2D<T, trans> inputs,
+SoftMaxActivation::compute_impl(tensors::TensorReadOnly2D<T, trans> inputs,
                                 tensors::TensorWriteable2D<T> outputs) {
-  tensors::ops::negative_exp(inputs, outputs);
-  tensors::ops::add(static_cast<T>(1.0), outputs);
-  tensors::ops::reverse_scal(static_cast<T>(1.0), outputs);
+  // TODO: Finish
 }
 
 template<typename T, bool trans>
 void
-SigmoidActivation::derivative_impl(tensors::TensorReadOnly2D<T, trans> inputs,
+SoftMaxActivation::derivative_impl(tensors::TensorReadOnly2D<T, trans> inputs,
                                    tensors::TensorWriteable2D<T> outputs) {
-  auto sigm = compute(inputs);
-  tensors::ops::copy(sigm.tensor_view().to_read_only(), outputs);
-  tensors::ops::add_negative(static_cast<T>(1.0), sigm.tensor_view());
-  tensors::ops::element_wise_mul(sigm.tensor_view().to_read_only(), outputs);
+  // TODO: Finish
 }
 
 } // perceptron
 } // activations
 
-#endif //PERCEPTRON_ACTIVATIONS_SIGMOIDACTIVATION_H
+#endif //PERCEPTRON_ACTIVATIONS_SOFTMAXACTIVATION_H

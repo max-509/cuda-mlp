@@ -4,4 +4,3 @@
 /cmake-build-release*
 /*-build-*
 .ipynb_checkpoints/
-*.csv

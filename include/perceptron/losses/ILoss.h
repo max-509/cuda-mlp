@@ -22,6 +22,9 @@ public:
 
   virtual ~ILoss() = default;
 
+  virtual bool
+  with_activation() const;
+
   virtual double
   compute(tensors::TensorReadOnly2D<float, true> preds,
           tensors::TensorReadOnly2D<float, true> trues) = 0;

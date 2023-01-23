@@ -52,9 +52,9 @@ int main() {
   std::cerr << "Loss equals to: " << loss << std::endl;
 
   test_features.to_host();
-  test_labels.to_host();
+  transformed_owner.to_host();
   tensor_to_csv(test_features.tensor_view().to_read_only(), "polynom_test_features.csv", {"f1"});
-  tensor_to_csv(test_labels.tensor_view().to_read_only(), "polynom_test_labels.csv", {"label"});
+  tensor_to_csv(transformed_owner.tensor_view().to_read_only(), "polynom_test_labels.csv", {"label"});
 
   return 0;
 }

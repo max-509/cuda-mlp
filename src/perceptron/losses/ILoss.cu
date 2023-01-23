@@ -3,6 +3,11 @@
 namespace perceptron {
 namespace losses {
 
+bool
+ILoss::with_activation() const {
+  return false;
+}
+
 tensors::TensorOwner2D<float>
 ILoss::derivative(tensors::TensorReadOnly2D<float, true> preds,
                   tensors::TensorReadOnly2D<float, true> trues) {

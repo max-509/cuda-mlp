@@ -19,6 +19,7 @@ set(HDRS
 
         ${HDRS_PATH}/perceptron/losses/ILoss.h
         ${HDRS_PATH}/perceptron/losses/SquaredLoss.h
+        ${HDRS_PATH}/perceptron/losses/LogLossWithSoftMax.h
 
         ${HDRS_PATH}/perceptron/optimizers/OptimizerFactory.h
         ${HDRS_PATH}/perceptron/optimizers/IOptimizer.h
@@ -29,6 +30,7 @@ set(HDRS
         ${HDRS_PATH}/perceptron/activations/SigmoidActivation.h
         ${HDRS_PATH}/perceptron/activations/ReLUActivation.h
         ${HDRS_PATH}/perceptron/activations/LeakyReLUActivation.h
+        ${HDRS_PATH}/perceptron/activations/SoftMaxActivation.h
 
         ${HDRS_PATH}/perceptron/tensors/ops/MemoryOps.h
         ${HDRS_PATH}/perceptron/tensors/ops/kernels/MemoryOpsKernels.cuh
@@ -65,6 +67,7 @@ set(SRCS
 
         ${SRCS_PATH}/perceptron/losses/ILoss.cu
         ${SRCS_PATH}/perceptron/losses/SquaredLoss.cu
+        ${SRCS_PATH}/perceptron/losses/LogLossWithSoftMax.cu
 
         ${SRCS_PATH}/perceptron/optimizers/OptimizerFactory.cu
         ${SRCS_PATH}/perceptron/optimizers/IOptimizer.cu
@@ -75,6 +78,7 @@ set(SRCS
         ${SRCS_PATH}/perceptron/activations/SigmoidActivation.cu
         ${SRCS_PATH}/perceptron/activations/LeakyReLUActivation.cu
         ${SRCS_PATH}/perceptron/activations/ReLUActivation.cu
+        ${SRCS_PATH}/perceptron/activations/SoftMaxActivation.cu
 
         ${SRCS_PATH}/perceptron/tensors/ops/kernels/ConstructOpsKernels.cu
         ${SRCS_PATH}/perceptron/tensors/ops/kernels/MathOpsKernels.cu

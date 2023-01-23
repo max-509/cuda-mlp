@@ -485,6 +485,21 @@ negative_exp(TensorWriteable2D<T> dst, cudaStream_t stream = nullptr) {
   kernels::negative_exp_kernel(blocks, threads, 0, stream, dst);
 }
 
+template<typename T, bool trans>
+void
+softmax(TensorReadOnly2D<T, trans> src, TensorWriteable2D<T> dst, cudaStream_t stream = nullptr) {
+  is_valid_type<T>();
+  // TODO: Finish
+}
+
+template<typename T, bool trans>
+TensorOwner2D<T>
+softmax(TensorReadOnly2D<T, trans> src, cudaStream_t stream = nullptr) {
+  auto dst_owner = constructTensorOwnerDevice2D<T>(src.get_nrows(), src.get_ncols(), stream);
+  softmax(src, dst_owner.tensor_view(), stream);
+  return dst_owner;
+}
+
 template<typename T, typename curand_distr_tag>
 void
 generate(curand_distr_tag tag,
